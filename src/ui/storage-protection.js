@@ -12,14 +12,6 @@ import { confirmDialog, h, openDialog, toast } from './dom.js';
 
 export const canPersist = () => Boolean(navigator.storage?.persist);
 
-export async function isPersisted() {
-  try {
-    return await navigator.storage.persisted();
-  } catch {
-    return false;
-  }
-}
-
 /** 'granted', 'denied', 'prompt', or 'unknown' where the browser can't tell. */
 export async function persistenceState() {
   try {
@@ -29,9 +21,24 @@ export async function persistenceState() {
   }
 }
 
+/**
+ * Protected now. persisted() alone isn't enough: Firefox keeps answering true
+ * after the permission is removed or blocked (bug 1558478), so the permission
+ * must still be granted too (Safari can't tell: trust persisted()).
+ */
+export async function isProtected() {
+  try {
+    if (!(await navigator.storage.persisted())) return false;
+  } catch {
+    return false;
+  }
+  const state = await persistenceState();
+  return state === 'granted' || state === 'unknown';
+}
+
 /** True where the browser can still show its prompt (Firefox, not refused). */
 async function canAskUser() {
-  return isFirefox() && canPersist() && !(await isPersisted()) && (await persistenceState()) !== 'denied';
+  return isFirefox() && canPersist() && !(await isProtected()) && (await persistenceState()) !== 'denied';
 }
 
 /** Where to allow it once refused (or, outside Firefox, how to earn it). */
@@ -59,7 +66,7 @@ export function showPersistenceHelp() {
  */
 export async function protectStorage() {
   const started = performance.now();
-  if (await requestPersistence()) {
+  if ((await requestPersistence()) && (await isProtected())) {
     toast('Archivio protetto', { type: 'success' });
     return true;
   }

@@ -129,3 +129,11 @@
     --shadow-lg: 0 12px 40px rgb(0 0 0 / 55%);
   }
 }
+
+/* Firefox for Android reports the gesture bar as safe-area-inset-bottom but
+   never draws the page under it: the padding would only lift the tab bar */
+@supports (-moz-appearance: none) {
+  :root {
+    --safe-bottom: 0px;
+  }
+}

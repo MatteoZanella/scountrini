@@ -1,4 +1,7 @@
-// Full-screen image viewer: tap to toggle fit / 100% zoom.
+// Full-screen image viewer. Opens fitted to the screen width (a long receipt
+// reads straight away, one finger scrolls it natively). Pinch, double tap,
+// double click or Ctrl+wheel zoom the image only: the page itself never zooms
+// (touch-action on the body), so the header stays put.
 
 import { $, show, objectUrlSlot, closeOnBack } from './dom.js';
 
@@ -8,6 +11,87 @@ const body = $('#viewer-body');
 const url = objectUrlSlot();
 let releaseBack = null; // set while open
 
+// Mouse and trackpad have their own gestures
+if (!matchMedia('(pointer: coarse)').matches) {
+  $('#viewer-hint').textContent = 'Doppio clic o Ctrl+rotellina per ingrandire';
+}
+
+// Image width limits in CSS px: whole image visible ↔ well past 1:1
+const range = { fit: 0, min: 0, max: 0 };
+
+function measure() {
+  const ratio = img.naturalHeight / img.naturalWidth || 1;
+  range.fit = body.clientWidth;
+  range.min = Math.min(range.fit, body.clientHeight / ratio);
+  range.max = Math.max(range.fit * 4, img.naturalWidth / (devicePixelRatio || 1));
+}
+
+/** Sets the image width, keeping the point under (cx, cy) where it is. */
+function zoomTo(width, cx, cy) {
+  const before = img.getBoundingClientRect();
+  const w = Math.max(range.min, Math.min(range.max, width));
+  const k = w / before.width;
+  img.style.width = `${w}px`;
+  const after = img.getBoundingClientRect();
+  body.scrollLeft += after.left + (cx - before.left) * k - cx;
+  body.scrollTop += after.top + (cy - before.top) * k - cy;
+}
+
+function fitWidth() {
+  measure();
+  img.style.width = `${range.fit}px`;
+  body.scrollTo(0, 0);
+}
+
+// ---- Pinch (two fingers); one finger is left to native scrolling ----
+let pinch = null;
+const span = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+body.addEventListener(
+  'touchstart',
+  (e) => {
+    if (e.touches.length === 2) pinch = { span: span(e.touches), width: img.getBoundingClientRect().width };
+  },
+  { passive: true },
+);
+body.addEventListener(
+  'touchmove',
+  (e) => {
+    if (!pinch || e.touches.length !== 2) return;
+    e.preventDefault(); // no scrolling while pinching
+    const [a, b] = e.touches;
+    zoomTo((pinch.width * span(e.touches)) / pinch.span, (a.clientX + b.clientX) / 2, (a.clientY + b.clientY) / 2);
+  },
+  { passive: false },
+);
+body.addEventListener('touchend', (e) => e.touches.length < 2 && (pinch = null));
+
+// ---- Double tap / double click: zoom into the point, again to fit ----
+let lastTap = 0;
+body.addEventListener('click', (e) => {
+  const now = performance.now();
+  if (now - lastTap > 300) {
+    lastTap = now;
+    return;
+  }
+  lastTap = 0;
+  const zoomed = img.getBoundingClientRect().width > range.fit * 1.05;
+  zoomTo(zoomed ? range.fit : range.fit * 2.5, e.clientX, e.clientY);
+});
+
+// ---- Trackpad pinch and Ctrl+wheel (desktop) ----
+body.addEventListener(
+  'wheel',
+  (e) => {
+    if (!e.ctrlKey) return; // plain wheel scrolls
+    e.preventDefault();
+    zoomTo(img.getBoundingClientRect().width * Math.exp(-e.deltaY / 200), e.clientX, e.clientY);
+  },
+  { passive: false },
+);
+
+img.addEventListener('load', fitWidth);
+addEventListener('resize', () => !root.hidden && img.naturalWidth && fitWidth());
+
 function close() {
   if (!releaseBack) return;
   releaseBack();
@@ -15,30 +99,17 @@ function close() {
   show(root, false);
   document.body.classList.remove('modal-open');
   img.removeAttribute('src');
+  img.style.width = '';
   url.set(null);
 }
 
-body.addEventListener('click', (e) => {
-  const zoomed = body.classList.toggle('zoomed');
-  if (zoomed) {
-    // Keep the tapped point under the finger after zooming
-    const r = img.getBoundingClientRect();
-    const fx = (e.clientX - r.left) / r.width;
-    const fy = (e.clientY - r.top) / r.height;
-    requestAnimationFrame(() => {
-      body.scrollLeft = fx * img.scrollWidth - body.clientWidth / 2;
-      body.scrollTop = fy * img.scrollHeight - body.clientHeight / 2;
-    });
-  }
-});
 $('#viewer-close').addEventListener('click', close);
 addEventListener('keydown', (e) => e.key === 'Escape' && close());
 
 export function openViewer(blob, title = 'Anteprima') {
   $('#viewer-title').textContent = title;
-  body.classList.remove('zoomed');
-  img.src = url.set(blob);
   show(root, true);
   document.body.classList.add('modal-open');
+  img.src = url.set(blob); // sized on load, now that the body has its size
   releaseBack ||= closeOnBack(close);
 }

@@ -14,7 +14,7 @@ import { canPromptInstall, installEvents, installHint, promptInstall } from '../
 import { h, icon } from './dom.js';
 import {
   canPersist,
-  isPersisted,
+  isProtected,
   persistenceState,
   protectStorage,
   showPersistenceHelp,
@@ -131,7 +131,7 @@ function browserCheck() {
 
 async function storageCheck(rerender) {
   if (!canPersist()) return null;
-  if (await isPersisted()) {
+  if (await isProtected()) {
     return { state: 'ok', title: 'Archivio protetto', detail: 'Il browser non cancella gli scontrini in coda' };
   }
   const denied = (await persistenceState()) === 'denied';

@@ -112,9 +112,11 @@ export async function resolveOwnFolder(path) {
 export async function verifyDestination(dest) {
   const base = `/drives/${dest.driveId}/items/${dest.itemId}`;
   const item = await request(`${base}?$select=id,name,webUrl`);
+  // Write check: open an upload session and cancel it, so no file is created.
+  // 'rename': a leftover file with this name must not fail the check (409).
   const session = await request(`${base}:/${encodeURIComponent('.scountrini-verifica.tmp')}:/createUploadSession`, {
     method: 'POST',
-    body: { item: { '@microsoft.graph.conflictBehavior': 'fail' } },
+    body: { item: { '@microsoft.graph.conflictBehavior': 'rename' } },
   });
   fetch(session.uploadUrl, { method: 'DELETE' }).catch(() => {});
   return { name: item.name, webUrl: item.webUrl };

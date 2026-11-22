@@ -29,7 +29,7 @@ export const canPromptInstall = () => Boolean(deferredInstall);
  */
 export function installHint() {
   if (isIOS()) return 'Safari: Condividi (anche dal menu ⋯) → “Aggiungi alla schermata Home”';
-  if (isFirefoxAndroid()) return 'Menu ⋮ → “Installa”';
+  if (isFirefoxAndroid()) return 'Menu ⋮ → “Aggiungi app alla schermata principale”';
   if (isAndroid()) return 'Menu ⋮ → “Aggiungi a schermata Home” → “Installa”';
   if (isFirefox()) {
     // Firefox 143+ on Windows only

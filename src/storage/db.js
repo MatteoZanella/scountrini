@@ -75,12 +75,11 @@ export async function storageEstimate() {
   }
 }
 
+/** Asks the browser to protect the storage; true if it is. Always asks:
+ *  persisted() can still say true after the permission was taken back. */
 export async function requestPersistence() {
   try {
-    if (navigator.storage?.persist && !(await navigator.storage.persisted())) {
-      return await navigator.storage.persist();
-    }
-    return true;
+    return navigator.storage?.persist ? await navigator.storage.persist() : true;
   } catch {
     return false;
   }
