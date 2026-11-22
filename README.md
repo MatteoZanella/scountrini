@@ -218,4 +218,4 @@ All dependencies come from npm and are pinned in `package-lock.json`: nothing th
 - **Uploads happen while the app is open** (on launch, when the connection returns, every 45 s). Browsers do not allow reliable background uploads with Microsoft tokens.
 - **WebP on Safari**: Safari cannot encode WebP from a canvas, so a WebAssembly encoder is loaded on demand. If that fails too, the app falls back to JPEG (same metadata).
 - **Resolution**: photos are capped at 4000 px on the long side and the final image at 16 Mpx / 16 000 px per side (iOS canvas and WebP limits). Receipt text stays sharp.
-- **Work/school accounts**: if the folder lives in a OneDrive for Business, external people must be invited as guests of the tenant.
+- **Work/school accounts**: if the folder lives in a OneDrive for Business, external people must be invited as guests of the tenant, and `VITE_MS_AUTHORITY` must point to that tenant (e.g. `https://login.microsoftonline.com/contoso.onmicrosoft.com`). With `common`, guests sign in as their personal account and cannot reach the folder.
