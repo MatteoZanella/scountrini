@@ -16,10 +16,10 @@ Each person signs in with **their own Microsoft account** (and stays signed in).
 
 ## Features
 
-- **Capture**: camera, gallery, files, paste (Ctrl/⌘+V) or drag and drop. Several photos per document. Each browser gets only the pickers it can tell apart (e.g. Firefox for Android: one _Galleria o file_).
+- **Capture**: camera, gallery, files, paste (Ctrl/⌘+V) or drag and drop. Several photos per document. Each browser gets only the pickers it can tell apart (e.g. Firefox for Android: one _Aggiungi foto_, as it opens the same chooser for camera and gallery).
 - **Document detection** (jscanify + OpenCV): suggested corners, which you can drag (with a magnifier loupe), rotate, or reset to the full image.
 - **Perspective correction** at native resolution.
-- **Enhancement**: shadow and uneven-light removal, then a tone curve chosen by the **result**: the receipt's paper and ink are measured and mapped to the levels the intensity asks for, so a faded and a dark receipt end up alike at the same intensity. One slider with a **fixed default for every document** (configurable), black and white by default (colour available), press and hold the image to compare with the original.
+- **Enhancement**: shadows and uneven light removed, paper made white, then a contrast slider. Each photo opens at its **Auto** level, which gives every receipt the same ink darkness. Black and white by default (colour available); press and hold the image to compare with the original.
 - **Automatic stitching** of long receipts. ORB features + RANSAC (similarity) + a maximum spanning tree, so photos can be taken in any order. The seam is found with dynamic programming along the line where the photos agree best and where there is _no text_, with a soft blend around it. Photos with nothing in common are placed side by side on black. The result is always a single image.
 - **Local OCR** (Tesseract, Italian model, works offline). Suggests date, merchant and total, following the layout of the Italian _documento commerciale_ (see below). Merchants you used before are recognised, also by their P.IVA, and autocompleted.
 - **Associative year** computed from the purchase date, with a manual override (for example, archiving last year's receipts in October).

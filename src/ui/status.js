@@ -6,7 +6,7 @@ import { isAndroid, isIOS, isStandalone } from '../core/device.js';
 import { jobs } from '../storage/db.js';
 import { reauthenticate } from '../cloud/auth.js';
 import { uploadQueue } from '../cloud/upload-queue.js';
-import { canPromptInstall, installEvents, promptInstall } from '../pwa.js';
+import { canPromptInstall, installEvents, installHint, promptInstall } from '../pwa.js';
 import { summarize } from './views/log-view.js';
 import { $, h, icon, show } from './dom.js';
 
@@ -48,11 +48,7 @@ function renderNotice() {
       'div.notice-inner.info',
       {},
       icon('share'),
-      h(
-        'span',
-        {},
-        'Aggiungi l’app alla schermata Home (Condividi → “Aggiungi alla schermata Home”) così la coda non viene cancellata da Safari.',
-      ),
+      h('span', {}, `Installa l’app, così Safari non cancella la coda. ${installHint()}.`),
       dismissInstallHint(),
     );
   } else if (offerInstall && canPromptInstall()) {
@@ -70,7 +66,7 @@ function renderNotice() {
       'div.notice-inner.info',
       {},
       icon('download'),
-      h('span', {}, 'Installa l’app: menu ⋮ → “Installa”.'),
+      h('span', {}, `Installa l’app. ${installHint()}.`),
       dismissInstallHint(),
     );
   }

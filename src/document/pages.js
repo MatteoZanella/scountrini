@@ -2,9 +2,7 @@
 // Persisted fields are plain data + Blobs (IndexedDB friendly); decoded
 // canvases are kept in an in-memory cache keyed by page id.
 
-import { CONFIG } from '../config.js';
 import { uuid } from '../core/naming.js';
-import { settings } from '../core/settings.js';
 import { canvasToBlob, blobToCanvas, decodeImageFile, rotateCanvas } from '../imaging/canvas.js';
 import { detectCorners } from '../imaging/corners.js';
 import { warpDocument } from '../imaging/perspective.js';
@@ -59,7 +57,7 @@ export async function importPhoto(file, origin) {
     source,
     rotation: 0,
     corners,
-    intensity: settings.get('defaultIntensity') ?? CONFIG.defaultIntensity,
+    intensity: null, // auto: set by the scanner from the photo itself
     mode: 'gray', // black and white reads best for receipts; colour stays one tap away
     origin,
     exif,

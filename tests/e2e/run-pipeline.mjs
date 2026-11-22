@@ -45,7 +45,12 @@ try {
 
   const { r } = result;
   const checks = [
-    ['document detected', r.detection.detected && r.detection.maxCornerErrorPx < 25],
+    ['document detected', r.detection.detected && r.detection.maxCornerErrorPx < 10],
+    [
+      'cut receipt: corners on the cut edge',
+      r.detectionCut.detected && r.detectionCut.topOnEdgePx <= 4 && r.detectionCut.bottomErrorPx < 10,
+    ],
+    ['shadow evened out (paper white)', r.shadow.paperLow >= 225 && r.shadow.paperMedian >= 245],
     ['two overlapping photos merged', r.stitchTwo.groups.length === 1],
     ['merged height plausible', Math.abs(r.stitchTwo.height - 2600) < 140],
     ['three shuffled photos merged', r.stitchThreeShuffled.groups.length === 1],

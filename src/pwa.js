@@ -2,6 +2,7 @@
 // install prompt (Chrome/Edge/Android only; iOS has no install API).
 
 import { registerSW } from 'virtual:pwa-register';
+import { isAndroid, isFirefox, isFirefoxAndroid, isIOS } from './core/device.js';
 import { toast } from './ui/dom.js';
 
 let deferredInstall = null;
@@ -20,6 +21,24 @@ addEventListener('appinstalled', () => {
 });
 
 export const canPromptInstall = () => Boolean(deferredInstall);
+
+/**
+ * Where to install from by hand, when there is no install prompt; null where
+ * the browser can't install apps (Firefox on macOS/Linux).
+ * Sources: Mozilla and Chrome help pages, Safari 26 (Share is in the ⋯ menu).
+ */
+export function installHint() {
+  if (isIOS()) return 'Safari: Condividi (anche dal menu ⋯) → “Aggiungi alla schermata Home”';
+  if (isFirefoxAndroid()) return 'Menu ⋮ → “Installa”';
+  if (isAndroid()) return 'Menu ⋮ → “Aggiungi a schermata Home” → “Installa”';
+  if (isFirefox()) {
+    // Firefox 143+ on Windows only
+    return /Windows/.test(navigator.userAgent)
+      ? 'Icona “app web” nella barra degli indirizzi → “Aggiungi alla barra delle applicazioni”'
+      : null;
+  }
+  return 'Icona di installazione nella barra degli indirizzi';
+}
 
 /** Shows the native install dialog. Resolves true if the user accepted. */
 export async function promptInstall() {

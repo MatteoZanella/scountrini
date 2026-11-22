@@ -1,7 +1,5 @@
 // Per-device user preferences (localStorage).
 
-import { CONFIG } from '../config.js';
-
 const KEY = 'scontrini.settings.v1';
 
 const DEFAULTS = Object.freeze({
@@ -11,7 +9,6 @@ const DEFAULTS = Object.freeze({
   saveLocation: true,
   autoOcr: true,
   wifiOnly: false,
-  defaultIntensity: CONFIG.defaultIntensity,
   merchants: [], // history used for autocomplete and OCR matching
   merchantByVat: {}, // P.IVA → name the user chose: recognises the shop even when its logo is not text
   installHintDismissed: false,

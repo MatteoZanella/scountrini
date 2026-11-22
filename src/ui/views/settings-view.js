@@ -23,7 +23,6 @@ const els = {
   ocr: $('#s-ocr'),
   wifi: $('#s-wifi'),
   wifiNote: $('#wifi-note'),
-  intensity: $('#s-intensity'),
   openFolder: $('#s-open-folder'),
   about: $('#about'),
   checks: $('#s-checks'),
@@ -48,8 +47,6 @@ const themeControl = segmented(
     },
   },
 );
-
-const syncSlider = () => els.intensity.style.setProperty('--fill', `${els.intensity.value}%`);
 
 const kv = (rows) => rows.filter(Boolean).map(([k, v]) => h('div.kv-row', {}, h('span', {}, k), h('b', {}, v || '—')));
 
@@ -103,8 +100,6 @@ export async function renderSettings() {
   els.wifiNote.textContent = wifiDetectionSupported()
     ? 'Altrimenti usa anche la rete dati'
     : 'Non supportato da questo browser: si carica con qualsiasi rete';
-  els.intensity.value = settings.get('defaultIntensity');
-  syncSlider();
   themeControl.set(settings.get('theme'));
 
   const dest = destination.get();
@@ -145,10 +140,6 @@ export function initSettings({ onChangeFolder }) {
   els.location.addEventListener('change', () => settings.set('saveLocation', els.location.checked));
   els.ocr.addEventListener('change', () => settings.set('autoOcr', els.ocr.checked));
   els.wifi.addEventListener('change', () => settings.set('wifiOnly', els.wifi.checked));
-  els.intensity.addEventListener('input', () => {
-    settings.set('defaultIntensity', +els.intensity.value);
-    syncSlider();
-  });
 
   watchDeviceCheck(els.checks, els.checkSummary);
   $('#btn-invite').addEventListener('click', invite);

@@ -34,7 +34,6 @@ export const CONFIG = {
   yearStartMonth: 10,
 
   // Image processing
-  defaultIntensity: 40, // same default for every document, adjustable per photo
   maxPhotoSide: 4000, // long side cap for imported photos (px)
   maxPagePixels: 12_000_000, // cap for one perspective-corrected photo
   maxOutputPixels: 16_000_000, // cap for the final image (iOS canvas limit)

@@ -321,8 +321,7 @@ async function pick(kind) {
     toast(`Massimo ${LIMITS.maxPagesPerDocument} foto per documento`, { type: 'warn' });
     return;
   }
-  // Camera: the system camera app where <input capture> is honoured, the
-  // in-app camera elsewhere (desktop, Firefox for Android)
+  // Desktop browsers ignore `capture`: there the webcam stands in
   if (kind === 'camera' && !hasSystemCamera() && canUseWebcam()) {
     const file = await captureFromWebcam();
     if (file) addPhotos([file], 'camera');
@@ -334,29 +333,31 @@ async function pick(kind) {
 }
 
 /**
- * Labels of the picker buttons this browser needs (null: not shown).
- * - Android (Chrome, Samsung…): the image input opens the photo picker, which
- *   lists the gallery apps (Google Foto…), so files get their own button.
- * - Firefox for Android has no photo picker: one input opens the file manager.
- * - iOS: the image input's menu already offers Photos, Camera and Files.
- * - Desktop: both would open the same file dialog.
+ * Labels of the picker buttons this browser can tell apart (null: not shown).
+ * - Android (Chrome, Samsung…): camera app, photo picker (Google Foto…), files.
+ * - Firefox for Android ignores `capture` and has no photo picker: every image
+ *   input opens the same chooser (camera or files), so a single button.
+ * - iOS: camera app; the image input's menu offers Photos and Files.
+ * - Desktop: webcam; one file dialog.
  */
 function photoSources() {
-  if (isFirefoxAndroid()) return { gallery: 'Galleria o file', files: null };
-  if (isAndroid()) return { gallery: 'Galleria', files: 'File' };
-  if (hasSystemCamera()) return { gallery: 'Galleria', files: null };
-  return { gallery: 'Scegli file', files: null };
+  if (isFirefoxAndroid()) return { camera: null, gallery: 'Aggiungi foto', files: null };
+  if (isAndroid()) return { camera: 'Scatta foto', gallery: 'Galleria', files: 'File' };
+  if (hasSystemCamera()) return { camera: 'Scatta foto', gallery: 'Galleria', files: null };
+  return { camera: 'Scatta foto', gallery: 'Scegli file', files: null };
 }
 
 /** One "+" for further photos; the source is picked in a small sheet. */
 async function chooseSource() {
   const row = (value, iconName, label) =>
     label && h('button.action-row', { value }, icon(iconName), h('span', {}, h('b', {}, label)));
-  const { gallery, files } = photoSources();
+  const { camera, gallery, files } = photoSources();
+  // Only one way in: open it straight away
+  if (!camera && !files && !canReadClipboardImages()) return pick('gallery');
   const body = h(
     'div.action-list',
     {},
-    row('camera', 'camera', 'Scatta foto'),
+    row('camera', 'camera', camera),
     row('gallery', 'image', gallery),
     row('files', 'folder', files),
     canReadClipboardImages() && row('paste', 'paste', 'Incolla'),
@@ -457,9 +458,10 @@ async function importPhotos(list, origin) {
       toast(e.message || 'Foto non leggibile', { type: 'error' });
       continue;
     }
-    // Same look as the previous photo: different settings would show at the stitching seam
+    // Same colour mode as the previous photo (the auto intensity already
+    // evens out their contrast), or the stitching seam would show
     const prev = state.pages.at(-1);
-    if (prev) Object.assign(imported.page, { mode: prev.mode, intensity: prev.intensity });
+    if (prev) imported.page.mode = prev.mode;
     const subtitle = list.length > 1 ? `Foto ${i + 1} di ${list.length}` : `Foto ${state.pages.length + 1}`;
     const page = await openScanner(imported.page, { subtitle, detected: imported.detected });
     if (!page) {
@@ -593,10 +595,11 @@ async function save() {
 // Wiring
 // --------------------------------------------------------------------------
 export function initComposer() {
-  const { gallery, files } = photoSources();
+  const { camera, gallery, files } = photoSources();
+  show($('[data-act="camera"]'), Boolean(camera));
+  $('[data-act="gallery"]').classList.toggle('primary', !camera);
   $('[data-act="gallery"] span').textContent = gallery;
   show($('[data-act="files"]'), Boolean(files));
-  show($('#firefox-gallery-hint'), isFirefoxAndroid());
   document.addEventListener('click', (e) => {
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (act === 'camera' || act === 'gallery' || act === 'files') pick(act);

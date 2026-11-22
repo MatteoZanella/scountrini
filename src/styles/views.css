@@ -153,14 +153,6 @@
   flex-basis: 100%;
 }
 
-.empty-hint {
-  max-width: 360px;
-  margin: 12px auto 0;
-  font-size: 0.8rem;
-  color: var(--text-2);
-  text-align: center;
-}
-
 /* Full-window drop target while dragging photos over the "Nuovo" view */
 .drop-overlay {
   position: fixed;

@@ -187,15 +187,6 @@ dialog input {
   cursor: pointer;
 }
 
-.field input[type='range'] {
-  padding: 0;
-  min-height: var(--tap);
-  background: none;
-  border: 0;
-  appearance: auto;
-  accent-color: var(--accent);
-}
-
 .hint {
   display: flex;
   flex-wrap: wrap;

@@ -1,9 +1,8 @@
 // "Il tuo dispositivo": a checklist of everything this phone needs for
 // uploads to work, each item with a one-tap fix or plain instructions.
 
-import { CONFIG } from '../config.js';
 import { formatDateTimeIT } from '../core/dates.js';
-import { isAndroid, isFirefox, isFirefoxAndroid, isIOS, isStandalone } from '../core/device.js';
+import { isFirefox, isFirefoxAndroid, isIOS, isStandalone } from '../core/device.js';
 import { jobs, requestPersistence } from '../storage/db.js';
 import { getAccount, reauthenticate } from '../cloud/auth.js';
 import { verifyDestination } from '../cloud/graph.js';
@@ -11,7 +10,7 @@ import { destination } from '../cloud/destination.js';
 import { describeError, isAccessDenied } from '../cloud/errors.js';
 import { showAccessRequest } from './access-request.js';
 import { uploadQueue } from '../cloud/upload-queue.js';
-import { canPromptInstall, installEvents, promptInstall } from '../pwa.js';
+import { canPromptInstall, installEvents, installHint, promptInstall } from '../pwa.js';
 import { h, icon, toast, openDialog } from './dom.js';
 
 const STALE_MS = 2 * 24 * 3600 * 1000;
@@ -87,7 +86,7 @@ function installCheck(rerender) {
     return {
       state: 'warn',
       title: 'Installa l’app',
-      detail: `In Safari tocca Condividi → “Aggiungi alla schermata Home”, poi usa l’icona ${CONFIG.appName}. Senza installazione Safari può cancellare gli scontrini in coda dopo 7 giorni.`,
+      detail: `${installHint()}. Senza, Safari può cancellare la coda dopo 7 giorni.`,
     };
   }
   if (canPromptInstall()) {
@@ -104,16 +103,13 @@ function installCheck(rerender) {
       },
     };
   }
-  return {
-    state: 'info',
-    title: 'Installa l’app',
-    detail: isAndroid() ? 'Menu ⋮ del browser → “Installa”' : 'Dal menu del browser: “Installa app”',
-  };
+  const hint = installHint();
+  return hint && { state: 'info', title: 'Installa l’app', detail: hint };
 }
 
 /** Firefox for Android works, but Chrome adds the photo picker, one-tap install and protected storage. */
 function browserCheck() {
-  if (!isFirefoxAndroid() || isStandalone()) return null;
+  if (!isFirefoxAndroid()) return null; // also when installed: the app runs on Firefox anyway
   const url = location.host + location.pathname;
   return {
     state: 'info',
@@ -137,11 +133,12 @@ async function persistenceState() {
 
 /** How to allow it once refused, for the browser in use. */
 function persistenceHelp() {
-  const steps = isFirefoxAndroid()
-    ? ['Apri l’app in Firefox e tocca il lucchetto accanto all’indirizzo', 'Consenti “Archivio persistente”']
-    : isFirefox()
-      ? ['Clicca il lucchetto accanto all’indirizzo → Permessi', 'Consenti “Archiviare dati in modo persistente”']
-      : ['Installa l’app e aprila dall’icona', 'Tocca di nuovo “Proteggi”'];
+  // Firefox for Android has no setting for it; desktop Firefox has it in Page
+  // Info; Chromium and Safari decide alone, mostly for installed apps.
+  if (isFirefoxAndroid()) return h('p', {}, 'Firefox per Android non lo permette: per proteggerla usa Chrome.');
+  const steps = isFirefox()
+    ? ['Premi Ctrl+I (⌘+I su Mac) → Permessi', 'Archivio persistente: togli “Usa predefiniti”, scegli “Consenti”']
+    : ['Installa l’app e aprila dall’icona', 'Tocca di nuovo “Proteggi”'];
   return h(
     'div',
     {},

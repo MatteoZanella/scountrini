@@ -2,7 +2,7 @@
 import { loadOpenCV } from '/src/imaging/opencv.js';
 import { detectCorners } from '/src/imaging/corners.js';
 import { warpDocument } from '/src/imaging/perspective.js';
-import { enhance } from '/src/imaging/enhance.js';
+import { enhance, prepareEnhance, renderEnhanced } from '/src/imaging/enhance.js';
 import { composeDocument } from '/src/imaging/stitch.js';
 import { encodeFinal } from '/src/imaging/encode.js';
 import { embedMetadata } from '/src/metadata/document-metadata.js';
@@ -88,6 +88,40 @@ function photoOf(receipt, deg) {
 
 const step = (name) => console.log(`step: ${name}`);
 
+/** Multiplies a diagonal shade and a hand-shaped dark blob over the image. */
+function withShadow(src) {
+  const c = createCanvas(src.width, src.height);
+  const g = ctx2d(c);
+  g.drawImage(src, 0, 0);
+  g.globalCompositeOperation = 'multiply';
+  const lin = g.createLinearGradient(0, 0, src.width, src.height);
+  lin.addColorStop(0, 'rgb(85,85,85)');
+  lin.addColorStop(0.6, 'rgb(205,205,205)');
+  lin.addColorStop(1, '#fff');
+  g.fillStyle = lin;
+  g.fillRect(0, 0, src.width, src.height);
+  const [x, y, r] = [src.width * 0.7, src.height * 0.35, src.width * 0.45];
+  const blob = g.createRadialGradient(x, y, 0, x, y, r);
+  blob.addColorStop(0, 'rgb(110,110,110)');
+  blob.addColorStop(1, '#fff');
+  g.fillStyle = blob;
+  g.fillRect(0, 0, src.width, src.height);
+  return c;
+}
+
+/**
+ * Paper pixels (white in the clean result) measured in the shaded result:
+ * low 2% and median luminance.
+ */
+function paperEvenness(clean, shaded) {
+  const a = ctx2d(clean).getImageData(0, 0, clean.width, clean.height).data;
+  const b = ctx2d(shaded).getImageData(0, 0, shaded.width, shaded.height).data;
+  const vals = [];
+  for (let p = 0; p < a.length; p += 4) if (a[p] >= 245) vals.push(b[p]);
+  vals.sort((x, y) => x - y);
+  return { paperLow: vals[Math.floor(vals.length * 0.02)], paperMedian: vals[vals.length >> 1] };
+}
+
 async function run() {
   const results = {};
   step('load opencv');
@@ -109,12 +143,45 @@ async function run() {
     ms: Math.round(performance.now() - t),
   };
 
+  // 1b) Same photo cut through the receipt: the top corners belong on the cut
+  // edge, the bottom ones on the receipt's real corners
+  const cut = crop(photo, 600, photo.height);
+  const detCut = await detectCorners(cut);
+  const [tl, tr, br, bl] = detCut.corners;
+  results.detectionCut = {
+    detected: detCut.detected,
+    topOnEdgePx: Math.round(Math.max(tl.y, tr.y)),
+    bottomErrorPx: Math.round(
+      Math.max(
+        Math.hypot(br.x - truth[2].x, br.y - (truth[2].y - 600)),
+        Math.hypot(bl.x - truth[3].x, bl.y - (truth[3].y - 600)),
+      ),
+    ),
+  };
+
   step('2)');
   // 2) Warp + enhance
   t = performance.now();
   const warped = await warpDocument(photo, det.corners);
-  const enhanced = await enhance(warped, { intensity: 60, mode: 'color' });
+  const enhanced = await enhance(warped, { mode: 'gray' }); // auto intensity
   results.warpEnhance = { width: enhanced.width, height: enhanced.height, ms: Math.round(performance.now() - t) };
+
+  step('2b)');
+  // 2b) The same receipt under a strong, uneven shadow: the paper must still
+  // come out evenly white (no grey patches, no whiter blotches)
+  const shaded = withShadow(warped);
+  const evened = await enhance(shaded, { mode: 'gray' });
+  results.shadow = paperEvenness(enhanced, evened);
+
+  // Live preview: one slider move = one render of the prepared photo
+  const prep = await prepareEnhance(shaded);
+  const out = new ImageData(prep.w, prep.h);
+  t = performance.now();
+  for (let i = 0; i < 10; i++) renderEnhanced(prep, { intensity: i * 10, mode: 'gray' }, out);
+  results.previewRender = {
+    megapixels: +((prep.w * prep.h) / 1e6).toFixed(1),
+    msPerMove: Math.round((performance.now() - t) / 10),
+  };
 
   step('3)');
   // 3) Two overlapping pieces, second slightly scaled/rotated
@@ -182,6 +249,8 @@ async function run() {
     stitchThree: three.canvas.toDataURL('image/jpeg', 0.9),
     unrelated: sep.canvas.toDataURL('image/jpeg', 0.9),
     enhanced: enhanced.toDataURL('image/jpeg', 0.9),
+    shaded: shaded.toDataURL('image/jpeg', 0.8),
+    evened: evened.toDataURL('image/jpeg', 0.9),
     photo: photo.toDataURL('image/jpeg', 0.8),
   };
   return results;

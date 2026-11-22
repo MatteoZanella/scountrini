@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resultLut } from '../src/imaging/enhance.js';
+import { autoIntensity, contrastLut, inkLevel } from '../src/imaging/enhance.js';
 
 // Synthetic receipts: paper, a little ink, and (for the crumpled one) crease
 // shading between the two. Each part is a bell holding `count` pixels.
@@ -29,36 +29,35 @@ const crumpled = receipt([
   [70, 10, 700],
 ]); // creases cast shadows between ink and paper
 
-describe('resultLut', () => {
-  it('measures paper and real ink, not the crease shading', () => {
-    const { ink, paper } = resultLut(crumpled, 50);
-    expect(Math.abs(paper - 228)).toBeLessThanOrEqual(6); // a quarter of creases pulls the median a little
-    expect(ink).toBeLessThan(90); // the ink bell (≈70), not the creases (≈160)
+describe('autoIntensity', () => {
+  it('measures real ink, not the crease shading', () => {
+    expect(inkLevel(crumpled)).toBeLessThan(90); // the ink bell (≈70), not the creases (≈160)
   });
 
-  it('brings very different receipts to the same result at the same intensity', () => {
-    for (const intensity of [20, 50, 90]) {
-      const levels = [crisp, faded, crumpled].map((h) => {
-        const { lut, ink, paper } = resultLut(h, intensity);
-        return [lut[ink], lut[paper]];
-      });
-      for (const [ink, paper] of levels) {
-        expect(Math.abs(ink - levels[0][0])).toBeLessThanOrEqual(1);
-        expect(Math.abs(paper - levels[0][1])).toBeLessThanOrEqual(1);
-      }
-    }
+  it('brings very different receipts to the same ink darkness', () => {
+    const inks = [crisp, faded, crumpled].map((h) => contrastLut(autoIntensity(h))[inkLevel(h)]);
+    for (const ink of inks) expect(Math.abs(ink - 35)).toBeLessThanOrEqual(6);
   });
 
-  it('keeps crease shading well away from black', () => {
-    const { lut } = resultLut(crumpled, 50);
-    expect(lut[160]).toBeGreaterThan(120);
+  it('needs more contrast for a faded receipt than for a crisp one', () => {
+    expect(autoIntensity(faded)).toBeGreaterThan(autoIntensity(crisp) + 30);
   });
 
-  it('goes from soft grey ink to solid black on white as intensity grows', () => {
-    const soft = resultLut(crisp, 0);
-    const strong = resultLut(crisp, 100);
-    expect(soft.lut[soft.ink]).toBeGreaterThan(90);
-    expect(strong.lut[strong.ink]).toBe(0);
-    expect(strong.lut[strong.paper]).toBe(255);
+  it('keeps crease shading away from black', () => {
+    expect(contrastLut(autoIntensity(crumpled))[160]).toBeGreaterThan(120);
+  });
+});
+
+describe('contrastLut', () => {
+  it('is the amount of change: 0 leaves the tones as they are', () => {
+    const lut = contrastLut(0);
+    for (const v of [0, 35, 128, 200, 255]) expect(lut[v]).toBe(v);
+  });
+
+  it('darkens ink and whitens paper more as intensity grows', () => {
+    const [low, high] = [contrastLut(30), contrastLut(90)];
+    expect(high[120]).toBeLessThan(low[120]);
+    expect(high[235]).toBeGreaterThanOrEqual(low[235]);
+    expect(contrastLut(100)[180]).toBe(0);
   });
 });

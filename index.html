@@ -138,10 +138,6 @@
           <circle cx="6.5" cy="12.5" r="1" fill="currentColor" />
           <circle cx="8.5" cy="7.5" r="1" fill="currentColor" />
         </symbol>
-        <symbol id="i-undo" viewBox="0 0 24 24">
-          <path d="M9 14 4 9l5-5" />
-          <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
-        </symbol>
         <symbol id="i-paste" viewBox="0 0 24 24">
           <rect x="8" y="2" width="8" height="4" rx="1" />
           <path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M16 4h2a2 2 0 0 1 2 2v4M21 14H11" />
@@ -184,7 +180,7 @@
                   <svg><use href="#i-copy" /></svg>Copia il link della cartella
                 </button>
               </li>
-              <li>Tocca <b>Condividi</b> → <b>Aggiungi alla schermata Home</b>.</li>
+              <li>Tocca <b>Condividi</b> (o menu <b>⋯</b> → Condividi) → <b>Aggiungi alla schermata Home</b>.</li>
               <li>
                 Apri l'app dall'icona nella Home e accedi lì<span id="setup-ios-paste-note" hidden
                   >, poi incolla il link al passo 2</span
@@ -307,7 +303,6 @@
                 <svg aria-hidden="true"><use href="#i-paste" /></svg>Incolla
               </button>
             </div>
-            <p class="empty-hint" id="firefox-gallery-hint" hidden>Le foto sono in <b>Immagini</b> o <b>DCIM</b>.</p>
             <p class="tip">
               <svg><use href="#i-layers" /></svg
               ><span>Scontrino lungo? Fai più foto sovrapponendo un po' le parti: le unisco in automatico.</span>
@@ -492,11 +487,6 @@
               ><span><b>Carica solo con Wi‑Fi</b><small id="wifi-note">Altrimenti usa anche la rete dati</small></span
               ><input type="checkbox" id="s-wifi"
             /></label>
-            <div class="field slider-field">
-              <label class="label" for="s-intensity">Intensità predefinita del miglioramento</label>
-              <input class="slider" type="range" id="s-intensity" min="0" max="100" step="5" />
-              <small class="hint">Si può sempre cambiare foto per foto.</small>
-            </div>
           </div>
 
           <div class="card">
@@ -655,14 +645,8 @@
           <div class="sc-group">
             <div class="sc-group-head">
               <label for="sc-intensity">Intensità</label>
-              <button
-                type="button"
-                class="sc-icon-btn"
-                data-sc="reset-int"
-                aria-label="Ripristina l'intensità predefinita"
-                title="Ripristina l'intensità predefinita"
-              >
-                <svg aria-hidden="true"><use href="#i-undo" /></svg>
+              <button type="button" class="sc-auto-btn" data-sc="auto-int">
+                <svg aria-hidden="true"><use href="#i-wand" /></svg>Auto
               </button>
             </div>
             <input class="slider" type="range" id="sc-intensity" min="0" max="100" step="1" />

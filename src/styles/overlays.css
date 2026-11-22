@@ -172,7 +172,7 @@
 @media (hover: hover) {
   .sc-tools button:hover,
   .btn.sc-tonal:hover,
-  .sc-icon-btn:not(:disabled):hover {
+  .sc-auto-btn:not(:disabled):hover {
     background: var(--sc-surface-hover);
   }
 
@@ -187,7 +187,7 @@
   background: var(--sc-surface-hover);
 }
 
-/* Intensity: label + reset on one line, the slider below */
+/* Intensity: label + Auto on one line, the slider below */
 .sc-group-head {
   display: flex;
   align-items: center;
@@ -195,26 +195,33 @@
   font-weight: 600;
 }
 
-.sc-icon-btn {
-  display: grid;
-  place-items: center;
-  width: var(--tap);
-  height: var(--tap);
-  margin-right: -10px;
-  border: 0;
-  border-radius: 50%;
+/* Auto: the level that matches this photo to every other one */
+.sc-auto-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  margin: 4px -8px 4px 0;
+  padding: 0 14px 0 10px;
+  border: 1px solid var(--sc-line);
+  border-radius: 18px;
   background: transparent;
   color: var(--sc-accent);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
 }
 
-.sc-icon-btn:disabled {
-  color: var(--sc-line);
+/* Already at the auto level */
+.sc-auto-btn:disabled {
+  border-color: transparent;
+  color: var(--sc-text-2);
   cursor: default;
 }
 
-.sc-icon-btn svg {
-  width: 22px;
-  height: 22px;
+.sc-auto-btn svg {
+  width: 18px;
+  height: 18px;
 }
 
 /* Shared slider (components.css) in the scanner's colours */

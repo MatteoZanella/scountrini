@@ -1,12 +1,10 @@
 // Full-screen scanner sheet: step 1 crop (corner editor), step 2 enhance
 // (live preview + intensity slider + color mode; press and hold the image to compare).
 
-import { CONFIG } from '../config.js';
-import { settings } from '../core/settings.js';
 import { scaleCanvas } from '../imaging/canvas.js';
 import { detectCorners, insetCorners, rotateCornersCW } from '../imaging/corners.js';
 import { warpDocument } from '../imaging/perspective.js';
-import { estimateBackground, enhanceWithBackground } from '../imaging/enhance.js';
+import { prepareEnhance, renderEnhanced } from '../imaging/enhance.js';
 import { getRotatedSource, renderPage } from '../document/pages.js';
 import { CornerEditor } from './corner-editor.js';
 import { $, $$, closeOnBack, show, segmented, toast } from './dom.js';
@@ -22,11 +20,9 @@ const els = {
   busyText: $('#sc-busy-text'),
   hint: $('#sc-crop-hint'),
   intensity: $('#sc-intensity'),
-  resetIntensity: $('[data-sc="reset-int"]'),
+  autoIntensity: $('[data-sc="auto-int"]'),
   compareHint: $('#sc-compare-hint'),
 };
-
-const defaultIntensity = () => settings.get('defaultIntensity') ?? CONFIG.defaultIntensity;
 
 let editor = null;
 let session = null; // state of the currently open scan
@@ -60,24 +56,23 @@ const modeControl = segmented(
   },
 );
 
-function drawPreview(canvas) {
-  const p = els.preview;
-  p.width = canvas.width;
-  p.height = canvas.height;
-  p.getContext('2d').drawImage(canvas, 0, 0);
+const previewCtx = els.preview.getContext('2d');
+
+/** Shows the enhanced preview, or the original crop while comparing. */
+function drawPreview(original = false) {
+  if (original) previewCtx.drawImage(session.previewSrc, 0, 0);
+  else previewCtx.putImageData(session.previewOut, 0, 0);
 }
 
+// The slider fires faster than the screen refreshes: one render per frame
 let previewRaf = 0;
 function schedulePreview() {
   cancelAnimationFrame(previewRaf);
   previewRaf = requestAnimationFrame(() => {
-    if (!session?.previewSrc) return;
-    const { page } = session;
-    session.previewOut = enhanceWithBackground(session.previewSrc, session.previewBg, {
-      intensity: page.intensity,
-      mode: page.mode,
-    });
-    drawPreview(session.previewOut);
+    if (!session?.prep) return;
+    const { intensity, mode } = session.page;
+    renderEnhanced(session.prep, { intensity, mode }, session.previewOut);
+    drawPreview();
   });
 }
 
@@ -85,7 +80,7 @@ function syncIntensity() {
   const v = session.page.intensity;
   els.intensity.value = v;
   els.intensity.style.setProperty('--fill', `${v}%`); // filled part of the track
-  els.resetIntensity.disabled = v === defaultIntensity();
+  els.autoIntensity.disabled = v === session.prep.auto;
 }
 
 async function showCrop() {
@@ -99,8 +94,14 @@ async function goEnhance() {
   setBusy('Raddrizzo il documento…');
   try {
     session.warped = await warpDocument(session.rotated, session.page.corners);
-    session.previewSrc = scaleCanvas(session.warped, 2200, 2_500_000);
-    session.previewBg = await estimateBackground(session.previewSrc);
+    // Screen resolution is enough to judge the look, and keeps the slider fluid
+    const side = Math.max(innerWidth, innerHeight) * Math.min(devicePixelRatio || 1, 2);
+    session.previewSrc = scaleCanvas(session.warped, side, 1_500_000);
+    session.prep = await prepareEnhance(session.previewSrc);
+    session.page.intensity ??= session.prep.auto;
+    els.preview.width = session.previewSrc.width;
+    els.preview.height = session.previewSrc.height;
+    session.previewOut = new ImageData(els.preview.width, els.preview.height);
     setStep('enhance');
     syncIntensity();
     modeControl.set(session.page.mode);
@@ -136,8 +137,8 @@ const actions = {
   },
   next: goEnhance,
   back: showCrop,
-  'reset-int'() {
-    session.page.intensity = defaultIntensity();
+  'auto-int'() {
+    session.page.intensity = session.prep.auto;
     syncIntensity();
     schedulePreview();
   },
@@ -168,8 +169,8 @@ els.intensity.addEventListener('input', () => {
 
 // Press and hold the image (or Space when it has focus) to see the original crop
 const showOriginal = (on) => {
-  if (!session?.previewSrc) return;
-  drawPreview(on ? session.previewSrc : session.previewOut || session.previewSrc);
+  if (!session?.prep) return;
+  drawPreview(on);
   els.compareHint.textContent = on ? 'Originale' : 'Tieni premuto per l’originale';
   els.compareHint.classList.toggle('on', on);
 };
