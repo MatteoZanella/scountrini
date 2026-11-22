@@ -5,6 +5,7 @@ import { CONFIG } from './config.js';
 import { settings } from './core/settings.js';
 import { guessDeviceName, isFirefox } from './core/device.js';
 import { requestPersistence } from './storage/db.js';
+import { offerStorageProtection } from './ui/storage-protection.js';
 import { initAuth } from './cloud/auth.js';
 import { captureInviteFromUrl } from './cloud/destination.js';
 import { uploadQueue } from './cloud/upload-queue.js';
@@ -20,7 +21,13 @@ import { initLog, render as renderLog } from './ui/views/log-view.js';
 import { initSettings, renderSettings } from './ui/views/settings-view.js';
 
 const VIEWS = ['setup', 'new', 'log', 'settings'];
-const onEnter = { setup: renderSetup, new: refreshComposer, log: renderLog, settings: renderSettings };
+const onEnter = {
+  setup: renderSetup,
+  // First visit (Firefox): ask to protect the stored receipts
+  new: () => (refreshComposer(), offerStorageProtection()),
+  log: renderLog,
+  settings: renderSettings,
+};
 
 let currentView = null;
 
@@ -121,9 +128,8 @@ async function main() {
   refreshStatus();
   registerServiceWorker();
   // Chromium and Safari grant storage persistence silently (installed app,
-  // engagement), so ask on launch. Firefox shows a permission prompt instead:
-  // there it is asked from the device checklist, on a tap, so an unexpected
-  // prompt at launch doesn't get refused and remembered.
+  // engagement), so ask on launch. Firefox shows a prompt instead: there the
+  // app explains first, on the first visit to "Nuovo" (storage-protection.js).
   if (!isFirefox()) requestPersistence();
   preloadHeavyAssets();
 }

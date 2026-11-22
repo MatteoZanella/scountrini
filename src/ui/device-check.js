@@ -2,8 +2,8 @@
 // uploads to work, each item with a one-tap fix or plain instructions.
 
 import { formatDateTimeIT } from '../core/dates.js';
-import { isFirefox, isFirefoxAndroid, isIOS, isStandalone } from '../core/device.js';
-import { jobs, requestPersistence } from '../storage/db.js';
+import { isFirefoxAndroid, isIOS, isStandalone } from '../core/device.js';
+import { jobs } from '../storage/db.js';
 import { getAccount, reauthenticate } from '../cloud/auth.js';
 import { verifyDestination } from '../cloud/graph.js';
 import { destination } from '../cloud/destination.js';
@@ -11,7 +11,14 @@ import { describeError, isAccessDenied } from '../cloud/errors.js';
 import { showAccessRequest } from './access-request.js';
 import { uploadQueue } from '../cloud/upload-queue.js';
 import { canPromptInstall, installEvents, installHint, promptInstall } from '../pwa.js';
-import { h, icon, toast, openDialog } from './dom.js';
+import { h, icon } from './dom.js';
+import {
+  canPersist,
+  isPersisted,
+  persistenceState,
+  protectStorage,
+  showPersistenceHelp,
+} from './storage-protection.js';
 
 const STALE_MS = 2 * 24 * 3600 * 1000;
 
@@ -107,14 +114,14 @@ function installCheck(rerender) {
   return hint && { state: 'info', title: 'Installa l’app', detail: hint };
 }
 
-/** Firefox for Android works, but Chrome adds the photo picker, one-tap install and protected storage. */
+/** Firefox for Android works, but Chrome adds the photo picker and one-tap install. */
 function browserCheck() {
   if (!isFirefoxAndroid()) return null; // also when installed: the app runs on Firefox anyway
   const url = location.host + location.pathname;
   return {
     state: 'info',
-    title: 'Con Chrome va meglio',
-    detail: 'Foto da Google Foto, installazione con un tocco, coda protetta',
+    title: 'Installa con Chrome',
+    detail: 'L’app è meglio supportata su Google Chrome',
     action: {
       label: 'Apri in Chrome',
       run: () => (location.href = `intent://${url}#Intent;scheme=https;package=com.android.chrome;end`),
@@ -122,50 +129,22 @@ function browserCheck() {
   };
 }
 
-/** Permission state where the Permissions API knows it: 'prompt', 'granted' or 'denied'. */
-async function persistenceState() {
-  try {
-    return (await navigator.permissions.query({ name: 'persistent-storage' })).state;
-  } catch {
-    return 'unknown'; // Safari doesn't expose this permission name
-  }
-}
-
-/** How to allow it once refused, for the browser in use. */
-function persistenceHelp() {
-  // Firefox for Android has no setting for it; desktop Firefox has it in Page
-  // Info; Chromium and Safari decide alone, mostly for installed apps.
-  if (isFirefoxAndroid()) return h('p', {}, 'Firefox per Android non lo permette: per proteggerla usa Chrome.');
-  const steps = isFirefox()
-    ? ['Premi Ctrl+I (⌘+I su Mac) → Permessi', 'Archivio persistente: togli “Usa predefiniti”, scegli “Consenti”']
-    : ['Installa l’app e aprila dall’icona', 'Tocca di nuovo “Proteggi”'];
-  return h(
-    'div',
-    {},
-    h('ol.persistence-steps', {}, ...steps.map((s) => h('li', {}, s))),
-    h('p.muted', {}, 'Intanto la coda funziona: rischia solo se il telefono resta senza spazio.'),
-  );
-}
-
 async function storageCheck(rerender) {
-  if (!navigator.storage?.persisted) return null;
-  if (await navigator.storage.persisted()) {
+  if (!canPersist()) return null;
+  if (await isPersisted()) {
     return { state: 'ok', title: 'Archivio protetto', detail: 'Il browser non cancella gli scontrini in coda' };
   }
   const denied = (await persistenceState()) === 'denied';
   return {
-    state: denied ? 'warn' : 'info',
+    state: 'warn',
     title: 'Archivio non protetto',
-    detail: 'Con poco spazio il browser potrebbe cancellare gli scontrini in coda',
+    detail: denied
+      ? 'Permesso negato: abilitare dalle impostazioni del sito'
+      : 'Il browser potrebbe cancellare gli scontrini in coda',
     action: {
-      // Once refused, asking again fails silently: say where to allow it
       label: denied ? 'Come fare' : 'Proteggi',
       run: async () => {
-        if (!denied && (await requestPersistence())) {
-          toast('Archivio protetto', { type: 'success' });
-        } else {
-          await openDialog({ title: 'Proteggi l’archivio', body: persistenceHelp(), ok: 'Ok', cancel: null });
-        }
+        await (denied ? showPersistenceHelp() : protectStorage());
         rerender();
       },
     },

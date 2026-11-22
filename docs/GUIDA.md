@@ -39,6 +39,7 @@ Nella scheda **Registro** vedi ogni scontrino:
 ## Cose utili
 
 - La **branca** resta quella scelta finché non la cambi.
+- Su **Firefox**, alla prima apertura tocca **Abilita**: così gli scontrini salvati sul telefono non vengono cancellati. Se l'hai saltato, lo trovi in _Impostazioni → Il tuo dispositivo_.
 - Su **Firefox per Android** c'è un solo pulsante, **Aggiungi foto**: Firefox poi chiede se usare la fotocamera o i file. Con **Chrome** hai pulsanti separati e puoi scegliere da Google Foto.
 - L'**anno associativo** (dal 1° ottobre al 30 settembre) si calcola dalla data dello scontrino; se archivi in ritardo puoi cambiarlo dal menu _Cartella_.
 - Se compare **"Accesso scaduto"**, tocca **Accedi**: gli scontrini in coda non si perdono.

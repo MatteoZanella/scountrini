@@ -25,6 +25,7 @@ import { canReadClipboardImages, initPhotoIntake, readClipboardImages } from '..
 import { canUseWebcam, captureFromWebcam, hasSystemCamera } from '../webcam.js';
 import { openViewer } from '../viewer.js';
 import { withBusy } from '../busy.js';
+import { askAgainOnSave } from '../storage-protection.js';
 import { $, h, icon, show, toast, confirmDialog, openDialog, segmented, objectUrlSlot } from '../dom.js';
 
 const els = {
@@ -546,6 +547,7 @@ function validate() {
 }
 
 async function save() {
+  askAgainOnSave(); // the receipt is about to be stored on the device
   const errors = validate();
   if (errors.length) {
     const [el, msg] = errors[0];

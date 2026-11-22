@@ -585,12 +585,34 @@ dialog input {
   margin-bottom: 10px;
 }
 
+/* Numbered steps: a small accent circle per step, aligned with the title */
 .dialog .persistence-steps {
   display: grid;
-  gap: 6px;
-  margin: 0 0 12px 20px;
-  color: var(--text);
-  font-size: 0.92rem;
+  gap: 12px;
+  margin: 4px 0 8px;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.dialog .persistence-steps li {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 12px;
+  counter-increment: step;
+}
+
+.dialog .persistence-steps li::before {
+  content: counter(step);
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 800;
 }
 
 .dialog-actions {
