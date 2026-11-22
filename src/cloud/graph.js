@@ -55,17 +55,35 @@ function encodeShareUrl(url) {
   return 'u!' + btoa(bin).replace(/=+$/, '').replace(/\//g, '_').replace(/\+/g, '-');
 }
 
+/** OneDrive/SharePoint web-view URL with `?id=<server path>` → the item's direct URL. */
+function directItemUrl(url) {
+  try {
+    const u = new URL(url.trim());
+    const id = u.searchParams.get('id');
+    return id?.startsWith('/') ? u.origin + encodePath(id) : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Resolves a OneDrive sharing link (to a folder) into a destination.
  * `Prefer: redeemSharingLink` grants the signed-in user lasting access.
  */
 export async function resolveShareLink(shareUrl) {
-  const item = await request(
-    `/shares/${encodeShareUrl(shareUrl)}/driveItem?$select=id,name,webUrl,folder,parentReference,shared,remoteItem`,
-    {
+  const select = '$select=id,name,webUrl,folder,parentReference,shared,remoteItem';
+  let item;
+  try {
+    item = await request(`/shares/${encodeShareUrl(shareUrl)}/driveItem?${select}`, {
       headers: { Prefer: 'redeemSharingLink' },
-    },
-  );
+    });
+  } catch (e) {
+    // A browser address (…/onedrive.aspx?id=/personal/…) is not a sharing
+    // link: retry with the folder's direct URL, built from its `id` path.
+    const direct = directItemUrl(shareUrl);
+    if (!direct || !(e instanceof GraphError)) throw e;
+    item = await request(`/shares/${encodeShareUrl(direct)}/driveItem?${select}`);
+  }
   const real = item.remoteItem || item;
   if (!item.folder && !real.folder) throw new Error('Il link non punta a una cartella');
   return {
