@@ -1,0 +1,823 @@
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--tap);
+  padding: 0 20px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--text);
+  transition:
+    transform 0.08s ease,
+    background 0.15s ease;
+  user-select: none;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+@media (hover: hover) {
+  .btn:hover {
+    background: var(--surface-2);
+  }
+
+  .btn.primary:hover {
+    background: var(--accent-strong);
+    border-color: var(--accent-strong);
+  }
+}
+
+.btn.danger {
+  color: var(--danger);
+}
+
+.btn.primary.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+.btn.small {
+  min-height: 44px;
+  padding: 0 14px;
+  font-size: 0.875rem;
+  gap: 6px;
+}
+
+.btn.small svg {
+  width: 16px;
+  height: 16px;
+}
+
+.btn.ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-2);
+}
+
+.btn.xl {
+  min-height: 56px;
+  font-size: 1.05rem;
+  padding: 0 24px;
+}
+
+.btn.block {
+  width: 100%;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.link.danger {
+  color: var(--danger);
+}
+
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+}
+
+/* ---------- Cards ---------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.card + .card {
+  margin-top: 12px;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.card-title {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+  margin-bottom: 12px;
+}
+
+.count {
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+/* ---------- Form fields ---------- */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.field input,
+.field select,
+.field textarea,
+dialog input {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 10px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: max(16px, 1rem); /* < 16px makes iOS zoom in on focus */
+  appearance: none;
+}
+
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  outline: 2px solid var(--focus);
+  outline-offset: 0;
+  border-color: var(--focus);
+}
+
+.field select {
+  padding-right: 44px;
+  background: var(--surface)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23857e91' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+    no-repeat right 14px center / 20px;
+  cursor: pointer;
+}
+
+.field input[type='range'] {
+  padding: 0;
+  min-height: var(--tap);
+  background: none;
+  border: 0;
+  appearance: auto;
+  accent-color: var(--accent);
+}
+
+.hint {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: 0.8rem;
+  color: var(--text-2);
+}
+
+.hint:empty {
+  display: none;
+}
+
+.ocr-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.ocr-tag svg {
+  width: 13px;
+  height: 13px;
+  fill: currentColor;
+  stroke: none;
+}
+
+/* ---------- Segmented control ---------- */
+.seg {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+
+.seg.wrap {
+  flex-wrap: wrap;
+}
+
+.seg.wrap button {
+  flex: 1 0 auto;
+}
+
+/* Segments sized by their label: never cut, whole segments wrap when needed */
+.seg.fit {
+  flex-wrap: wrap;
+}
+
+.seg.fit button {
+  flex: 1 1 auto;
+  white-space: nowrap;
+}
+
+.seg button {
+  flex: 1 1 0;
+  min-height: 44px;
+  min-width: 56px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--text-2);
+}
+
+.seg button.on {
+  background: var(--surface);
+  color: var(--accent);
+  font-weight: 700;
+  box-shadow:
+    inset 0 0 0 2px var(--accent),
+    var(--shadow);
+}
+
+/* Branch selector: each branch shows its colour as a dot; the selected one is
+   tinted and ringed. The name is always the label, colour is only a cue. */
+/* Always three per row on a six-column grid: the last row (Gruppo, CDG)
+   starts one column in, so it sits centred under the first */
+.seg.branches {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.seg.branches button:nth-child(3n + 1):nth-last-child(2) {
+  grid-column: 2 / span 2;
+}
+
+.seg.branches button {
+  --branch: var(--accent);
+  grid-column: span 2;
+  min-width: 0;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.seg.branches button::before {
+  content: '';
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--branch);
+  box-shadow: 0 0 0 1px var(--branch-ring);
+}
+
+.seg.branches button[data-value='LC'] {
+  --branch: var(--lc);
+}
+
+.seg.branches button[data-value='EG'] {
+  --branch: var(--eg);
+}
+
+.seg.branches button[data-value='RG'],
+.seg.branches button[data-value='RS'] {
+  --branch: var(--rs);
+}
+
+.seg.branches button.on {
+  color: var(--text);
+  background: color-mix(in srgb, var(--branch) 20%, var(--surface));
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, var(--branch) 55%, var(--text)),
+    var(--shadow);
+}
+
+/* ---------- Switch rows ---------- */
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 64px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.switch-row:last-of-type {
+  border-bottom: 0;
+}
+
+.switch-row span {
+  display: flex;
+  flex-direction: column;
+}
+
+.switch-row small {
+  color: var(--text-2);
+  font-size: 0.8rem;
+}
+
+.switch-row input {
+  appearance: none;
+  flex: none;
+  width: 50px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--border-strong);
+  position: relative;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+
+.switch-row input:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.switch-row input::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 25%);
+  transition: transform 0.2s;
+}
+
+.switch-row input:checked {
+  background: var(--accent);
+}
+
+.switch-row input:checked::after {
+  transform: translateX(20px);
+}
+
+.switch-row input:disabled {
+  opacity: 0.4;
+}
+
+/* ---------- Key/value lists ---------- */
+.kv {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.kv-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.92rem;
+}
+
+.kv-row span {
+  color: var(--text-2);
+}
+
+.kv-row b {
+  font-weight: 600;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+/* ---------- Disclosure ---------- */
+.disclosure {
+  margin: 4px 0 16px;
+}
+
+.disclosure summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--accent);
+  list-style: none;
+}
+
+.disclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.disclosure summary::before {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin: 0 4px 0 2px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+}
+
+.disclosure[open] summary::before {
+  transform: rotate(45deg);
+}
+
+.disclosure[open] summary {
+  margin-bottom: 8px;
+}
+
+/* ---------- Callouts ---------- */
+.callout {
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+}
+
+.callout.danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+/* ---------- Spinner ---------- */
+.spinner {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  border: 3px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.spinner.tiny {
+  width: 14px;
+  height: 14px;
+  border-width: 2px;
+}
+
+.spinner.light {
+  color: #fff;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Toasts ---------- */
+.toasts {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--nav-h) + var(--safe-bottom) + 12px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 520px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: #211638;
+  color: #fff;
+  box-shadow: var(--shadow-lg);
+  font-size: 0.92rem;
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 0.25s,
+    transform 0.25s;
+  pointer-events: auto;
+}
+
+.toast.in {
+  opacity: 1;
+  transform: none;
+}
+
+.toast.success {
+  background: #145c3b;
+}
+
+.toast.error {
+  background: #8c1d18;
+}
+
+.toast.warn {
+  background: #6b4300;
+}
+
+.toast-action {
+  border: 0;
+  background: rgb(255 255 255 / 18%);
+  color: #fff;
+  font-weight: 700;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+}
+
+/* ---------- Dialog ---------- */
+.dialog {
+  width: min(420px, calc(100vw - 32px));
+  border: 0;
+  border-radius: 20px;
+  padding: 22px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-lg);
+}
+
+.dialog::backdrop {
+  background: rgb(0 0 0 / 45%);
+}
+
+.dialog h3 {
+  font-size: 1.15rem;
+  margin-bottom: 10px;
+}
+
+.dialog p {
+  color: var(--text-2);
+  margin-bottom: 10px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.copy-field {
+  font-family: var(--mono);
+  font-size: 0.8rem !important;
+}
+
+/* ---------- Busy overlay ---------- */
+.busy-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 35%);
+  backdrop-filter: blur(2px);
+}
+
+.busy-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 22px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.busy-card span:last-child {
+  color: var(--text);
+}
+
+/* Icon-only button: square tap target, the label lives in aria-label */
+.btn.icon-only {
+  width: var(--tap);
+  padding: 0;
+}
+
+/* Date + time side by side; they stack when text is large */
+.field-row {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 12px;
+}
+
+.field-row .field {
+  flex: 1 1 11rem;
+  min-width: 0;
+}
+
+.field-row .field-time {
+  flex: 1 1 7rem;
+}
+
+.field-hint {
+  margin: -10px 0 16px;
+}
+
+/* ---------- Slider: filled track up to the thumb (--fill set by JS) ---------- */
+.slider {
+  --fill: 50%;
+  --slider-fill: var(--accent);
+  --slider-track: var(--border);
+  --slider-ring: var(--surface);
+  --slider-focus: var(--accent-soft);
+  width: 100%;
+  height: var(--tap);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  appearance: none;
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--slider-fill) var(--fill), var(--slider-track) var(--fill));
+}
+
+.slider::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--slider-fill) var(--fill), var(--slider-track) var(--fill));
+}
+
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  box-sizing: border-box; /* the global border-box rule does not reach this pseudo-element */
+  width: 24px;
+  height: 24px;
+  margin-top: -9px; /* (6px track - 24px thumb) / 2 */
+  border: 3px solid var(--slider-ring);
+  border-radius: 50%;
+  background: var(--slider-fill);
+  box-shadow: 0 0 0 1px var(--slider-fill);
+}
+
+.slider::-moz-range-thumb {
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--slider-ring);
+  border-radius: 50%;
+  background: var(--slider-fill);
+  box-shadow: 0 0 0 1px var(--slider-fill);
+}
+
+.slider:focus-visible {
+  outline: none;
+}
+
+.slider:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 0 0 4px var(--slider-focus),
+    0 0 0 6px var(--slider-fill);
+}
+
+.slider:focus-visible::-moz-range-thumb {
+  box-shadow:
+    0 0 0 4px var(--slider-focus),
+    0 0 0 6px var(--slider-fill);
+}
+
+/* ---------- Action rows (settings): icon, title, subtitle, chevron ---------- */
+.action-list {
+  margin: 4px -16px -16px;
+  border-top: 1px solid var(--border);
+}
+
+.action-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 16px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+}
+
+.action-row:last-child {
+  border-bottom: 0;
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+.action-row > svg:first-child {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  color: var(--accent);
+}
+
+.action-row > span {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.action-row b {
+  font-weight: 600;
+}
+
+.action-row small {
+  font-size: 0.82rem;
+  color: var(--text-2);
+}
+
+.action-row .chevron {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--text-3);
+}
+
+.action-row.danger,
+.action-row.danger > svg:first-child {
+  color: var(--danger);
+}
+
+@media (hover: hover) {
+  .action-row:hover {
+    background: var(--surface-2);
+  }
+}
+
+.action-row:focus-visible {
+  outline-offset: -3px;
+}
+
+/* Very narrow screens: a smaller colour dot keeps "Gruppo" whole at large text sizes */
+@media (max-width: 359px) {
+  .seg.branches button {
+    gap: 4px;
+    padding: 0 4px;
+  }
+
+  .seg.branches button::before {
+    width: 9px;
+    height: 9px;
+  }
+}
+
+/* Action rows inside a dialog run edge to edge */
+.dialog .action-list {
+  margin: 0 -22px;
+  border-bottom: 1px solid var(--border);
+}
+
+.dialog .action-row:last-child {
+  border-radius: 0;
+}

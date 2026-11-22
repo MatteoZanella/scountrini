@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f6f3ef" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#14111b" media="(prefers-color-scheme: dark)" />
+    <script>
+      // Forced theme before the first paint, so it never flashes (settings key: src/core/settings.js)
+      try {
+        var theme = JSON.parse(localStorage.getItem('scontrini.settings.v1') || '{}').theme;
+        if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+      } catch (e) {}
+    </script>
+    <meta
+      name="description"
+      content="Fotografa gli scontrini e archiviali su OneDrive, ordinati per anno associativo e branca."
+    />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Scountrini" />
+    <title>Scountrini</title>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <defs>
+        <symbol id="i-camera" viewBox="0 0 24 24">
+          <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+          <circle cx="12" cy="13" r="3.2" />
+        </symbol>
+        <symbol id="i-image" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <circle cx="9" cy="9" r="2" />
+          <path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21" />
+        </symbol>
+        <symbol id="i-receipt" viewBox="0 0 24 24">
+          <path d="M5 2v20l2.3-1.5L9.7 22l2.3-1.5 2.3 1.5 2.4-1.5L19 22V2l-2.3 1.5L14.3 2 12 3.5 9.7 2 7.3 3.5Z" />
+          <path d="M9 8h6M9 12h6M9 16h3" />
+        </symbol>
+        <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01" /></symbol>
+        <symbol id="i-sliders" viewBox="0 0 24 24">
+          <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" />
+        </symbol>
+        <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+        <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol>
+        <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12" /></symbol>
+        <symbol id="i-rotate" viewBox="0 0 24 24">
+          <path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.9 1 6.7 2.7L21 8" />
+          <path d="M21 3v5h-5" />
+        </symbol>
+        <symbol id="i-trash" viewBox="0 0 24 24">
+          <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+        </symbol>
+        <symbol id="i-edit" viewBox="0 0 24 24"><path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></symbol>
+        <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></symbol>
+        <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></symbol>
+        <symbol id="i-upload" viewBox="0 0 24 24">
+          <path d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 2.5 8.2" />
+          <path d="M12 12v9M16 16l-4-4-4 4" />
+        </symbol>
+        <symbol id="i-cloud-check" viewBox="0 0 24 24">
+          <path d="M17.5 19H9a7 7 0 1 1 6.7-9h1.8a4.5 4.5 0 1 1 0 9Z" />
+          <path d="m9 14 2 2 4-4" />
+        </symbol>
+        <symbol id="i-cloud-off" viewBox="0 0 24 24">
+          <path
+            d="m2 2 20 20M5.8 5.8A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.3-.2M21.5 15.5A4.5 4.5 0 0 0 17.5 10h-1.8A7 7 0 0 0 10 5.1"
+          />
+        </symbol>
+        <symbol id="i-alert" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 8v4M12 16h.01" />
+        </symbol>
+        <symbol id="i-external" viewBox="0 0 24 24">
+          <path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+        </symbol>
+        <symbol id="i-scan" viewBox="0 0 24 24">
+          <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" />
+        </symbol>
+        <symbol id="i-wand" viewBox="0 0 24 24">
+          <path
+            d="m21.6 3.6-1.2-1.2a1.2 1.2 0 0 0-1.7 0L2.4 18.6a1.2 1.2 0 0 0 0 1.7l1.2 1.2a1.2 1.2 0 0 0 1.7 0L21.6 5.4a1.2 1.2 0 0 0 0-1.8Z"
+          />
+          <path d="m14 7 3 3M5 6v4M19 14v4M10 2v2M7 8H3M21 16h-4M11 3H9" />
+        </symbol>
+        <symbol id="i-eye" viewBox="0 0 24 24">
+          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+          <circle cx="12" cy="12" r="3" />
+        </symbol>
+        <symbol id="i-folder" viewBox="0 0 24 24">
+          <path
+            d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"
+          />
+        </symbol>
+        <symbol id="i-download" viewBox="0 0 24 24">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+        </symbol>
+        <symbol id="i-share" viewBox="0 0 24 24">
+          <circle cx="18" cy="5" r="3" />
+          <circle cx="6" cy="12" r="3" />
+          <circle cx="18" cy="19" r="3" />
+          <path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4" />
+        </symbol>
+        <symbol id="i-sparkle" viewBox="0 0 24 24">
+          <path d="M12 3 9.9 9.9 3 12l6.9 2.1L12 21l2.1-6.9L21 12l-6.9-2.1Z" />
+        </symbol>
+        <symbol id="i-user" viewBox="0 0 24 24">
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 21a8 8 0 0 1 16 0" />
+        </symbol>
+        <symbol id="i-layers" viewBox="0 0 24 24">
+          <path d="m12 2 10 5-10 5L2 7Z" />
+          <path d="m2 17 10 5 10-5M2 12l10 5 10-5" />
+        </symbol>
+        <symbol id="i-copy" viewBox="0 0 24 24">
+          <rect x="9" y="9" width="13" height="13" rx="2" />
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+        </symbol>
+        <symbol id="i-logout" viewBox="0 0 24 24">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+        </symbol>
+        <symbol id="i-archive" viewBox="0 0 24 24">
+          <rect x="2" y="3" width="20" height="5" rx="1" />
+          <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M10 12h4" />
+        </symbol>
+        <symbol id="i-contrast" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 18a6 6 0 0 0 0-12v12z" fill="currentColor" />
+        </symbol>
+        <symbol id="i-palette" viewBox="0 0 24 24">
+          <path
+            d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"
+          />
+          <circle cx="13.5" cy="6.5" r="1" fill="currentColor" />
+          <circle cx="17.5" cy="10.5" r="1" fill="currentColor" />
+          <circle cx="6.5" cy="12.5" r="1" fill="currentColor" />
+          <circle cx="8.5" cy="7.5" r="1" fill="currentColor" />
+        </symbol>
+        <symbol id="i-undo" viewBox="0 0 24 24">
+          <path d="M9 14 4 9l5-5" />
+          <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
+        </symbol>
+        <symbol id="i-paste" viewBox="0 0 24 24">
+          <rect x="8" y="2" width="8" height="4" rx="1" />
+          <path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M16 4h2a2 2 0 0 1 2 2v4M21 14H11" />
+          <path d="m15 10-4 4 4 4" />
+        </symbol>
+      </defs>
+    </svg>
+
+    <div id="app">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark"
+            ><svg><use href="#i-receipt" /></svg
+          ></span>
+          <span class="brand-name">Scountrini</span>
+        </div>
+        <button id="queue-chip" class="queue-chip" type="button" hidden></button>
+      </header>
+
+      <div id="notice" class="notice" hidden></div>
+
+      <main id="main">
+        <!-- ============ CONFIGURAZIONE INIZIALE ============ -->
+        <section id="view-setup" class="view" hidden>
+          <div class="setup-hero">
+            <span class="hero-mark"
+              ><svg><use href="#i-receipt" /></svg
+            ></span>
+            <h1>Benvenuto!</h1>
+            <p>
+              Fotografa gli scontrini e archiviali nella cartella condivisa su OneDrive, già ordinati per anno e branca.
+            </p>
+          </div>
+
+          <div class="callout info" id="setup-ios-install" hidden>
+            <b>Su iPhone installa prima l'app</b>
+            <ol>
+              <li id="setup-ios-copy-row" hidden>
+                <button class="btn small" id="btn-copy-invite" type="button">
+                  <svg><use href="#i-copy" /></svg>Copia il link della cartella
+                </button>
+              </li>
+              <li>Tocca <b>Condividi</b> → <b>Aggiungi alla schermata Home</b>.</li>
+              <li>
+                Apri l'app dall'icona nella Home e accedi lì<span id="setup-ios-paste-note" hidden
+                  >, poi incolla il link al passo 2</span
+                >.
+              </li>
+            </ol>
+            <small
+              >L'app installata ha un archivio separato da Safari, che lo cancella dopo 7 giorni di inutilizzo.</small
+            >
+          </div>
+
+          <ol class="steps">
+            <li class="step" id="step-login">
+              <div class="step-head">
+                <span class="step-num">1</span>
+                <h2>Accedi con Microsoft</h2>
+              </div>
+              <div class="step-body">
+                <p class="muted">
+                  Usa l'account Microsoft con cui ti hanno condiviso la cartella: resterai collegato su questo
+                  dispositivo.
+                </p>
+                <div id="setup-config-error" class="callout danger" hidden>
+                  App non ancora configurata: manca il Client ID Microsoft (variabile
+                  <code>VITE_MS_CLIENT_ID</code>, vedi il README).
+                </div>
+                <button class="btn primary" id="btn-login" type="button">Accedi con Microsoft</button>
+              </div>
+              <div class="step-done" id="login-done"></div>
+              <button class="link step-alt" id="btn-setup-switch" type="button" hidden>
+                Non sei tu? Cambia account
+              </button>
+            </li>
+
+            <li class="step" id="step-folder">
+              <div class="step-head">
+                <span class="step-num">2</span>
+                <h2>Collega la cartella</h2>
+              </div>
+              <div class="step-body">
+                <p class="muted">
+                  Incolla il link della cartella <b>scontrini</b> che ti è stato condiviso (con permesso di modifica).
+                </p>
+                <label class="field">
+                  <span class="label">Link della cartella condivisa</span>
+                  <span class="input-row">
+                    <input
+                      id="setup-share"
+                      type="url"
+                      inputmode="url"
+                      placeholder="https://1drv.ms/f/…"
+                      autocomplete="off"
+                    />
+                    <button
+                      class="btn icon-only"
+                      id="btn-paste-share"
+                      type="button"
+                      aria-label="Incolla il link dagli appunti"
+                      title="Incolla dagli appunti"
+                      hidden
+                    >
+                      <svg aria-hidden="true"><use href="#i-paste" /></svg>
+                    </button>
+                  </span>
+                </label>
+                <button class="btn primary" id="btn-link-share" type="button">Collega cartella</button>
+                <div class="callout" id="setup-account-hint" hidden></div>
+                <details class="disclosure">
+                  <summary>La cartella è nel mio OneDrive</summary>
+                  <label class="field">
+                    <span class="label">Percorso nel tuo OneDrive</span>
+                    <input id="setup-own-path" type="text" value="scontrini" autocomplete="off" />
+                  </label>
+                  <button class="btn" id="btn-link-own" type="button">Usa questa cartella</button>
+                </details>
+              </div>
+              <div class="step-done" id="folder-done"></div>
+            </li>
+
+            <li class="step" id="step-profile">
+              <div class="step-head">
+                <span class="step-num">3</span>
+                <h2>Chi sei</h2>
+              </div>
+              <div class="step-body">
+                <label class="field">
+                  <span class="label">Il tuo nome</span>
+                  <input id="setup-name" type="text" autocomplete="name" placeholder="Nome e cognome" />
+                  <small class="hint">Viene salvato nei metadati di ogni scontrino caricato.</small>
+                </label>
+                <div class="field">
+                  <span class="label">La tua branca quest'anno</span>
+                  <div class="seg wrap branches" id="setup-branca" aria-label="Branca" role="radiogroup"></div>
+                </div>
+                <button class="btn primary" id="btn-setup-done" type="button">Inizia</button>
+              </div>
+            </li>
+          </ol>
+        </section>
+
+        <!-- ============ NUOVO DOCUMENTO ============ -->
+        <section id="view-new" class="view" hidden>
+          <div id="empty-state" class="empty">
+            <div class="empty-art" aria-hidden="true">
+              <svg><use href="#i-receipt" /></svg>
+            </div>
+            <h1>Nuovo scontrino</h1>
+            <p class="muted">Fotografalo su un fondo scuro e ben illuminato. Lo ritaglio e lo raddrizzo io.</p>
+            <div class="empty-actions">
+              <button class="btn primary xl" data-act="camera" type="button">
+                <svg aria-hidden="true"><use href="#i-camera" /></svg>Scatta foto
+              </button>
+              <button class="btn xl" data-act="gallery" type="button">
+                <svg aria-hidden="true"><use href="#i-image" /></svg>Galleria
+              </button>
+              <button class="btn xl" data-act="paste" type="button" hidden>
+                <svg aria-hidden="true"><use href="#i-paste" /></svg>Incolla
+              </button>
+            </div>
+            <p class="tip">
+              <svg><use href="#i-layers" /></svg
+              ><span>Scontrino lungo? Fai più foto sovrapponendo un po' le parti: le unisco in automatico.</span>
+            </p>
+          </div>
+
+          <div id="doc-editor" hidden>
+            <div class="card">
+              <div class="card-head">
+                <h2>Foto <span class="count" id="page-count"></span></h2>
+                <button class="link danger" id="btn-discard" type="button">Annulla documento</button>
+              </div>
+              <div class="pages" id="pages"></div>
+            </div>
+
+            <div class="card preview-card">
+              <button class="preview" id="preview" type="button" aria-label="Apri anteprima">
+                <img id="preview-img" alt="Anteprima del documento" />
+                <div class="preview-busy" id="preview-busy" hidden>
+                  <span class="spinner"></span><span id="preview-busy-text">Unione…</span>
+                </div>
+              </button>
+              <p class="compose-info" id="compose-info"></p>
+            </div>
+
+            <form class="card form" id="doc-form" autocomplete="off" novalidate>
+              <div class="field-row">
+                <label class="field">
+                  <span class="label">Data dell'operazione</span>
+                  <input type="date" id="f-date" required />
+                </label>
+                <label class="field field-time">
+                  <span class="label">Ora</span>
+                  <input type="time" id="f-time" />
+                </label>
+              </div>
+              <small class="hint field-hint" id="date-hint"></small>
+              <label class="field">
+                <span class="label">Esercente</span>
+                <input
+                  id="f-merchant"
+                  list="merchant-list"
+                  placeholder="es. Lidl, Cadoro, Pesavento"
+                  enterkeyhint="done"
+                  autocapitalize="words"
+                  maxlength="60"
+                  required
+                />
+                <small class="hint" id="merchant-hint"></small>
+              </label>
+              <datalist id="merchant-list"></datalist>
+              <div class="field">
+                <span class="label">Branca</span>
+                <div class="seg wrap branches" id="f-branca" aria-label="Branca" role="radiogroup"></div>
+              </div>
+              <label class="field">
+                <span class="label">Anno associativo</span>
+                <select id="f-year"></select>
+                <small class="hint dest-path" id="dest-path"></small>
+              </label>
+              <details class="disclosure" id="more-details">
+                <summary>Altri dettagli <span class="muted">(facoltativi)</span></summary>
+                <label class="field">
+                  <span class="label">Importo (€)</span>
+                  <input id="f-amount" inputmode="decimal" placeholder="0,00" maxlength="12" />
+                  <small class="hint" id="amount-hint"></small>
+                </label>
+                <label class="field">
+                  <span class="label">Note</span>
+                  <textarea
+                    id="f-notes"
+                    rows="2"
+                    maxlength="300"
+                    placeholder="es. spesa per uscita di reparto"
+                  ></textarea>
+                </label>
+              </details>
+            </form>
+
+            <div class="savebar">
+              <button class="btn primary xl block" id="btn-save" type="button">
+                <svg><use href="#i-upload" /></svg>Salva e carica
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ REGISTRO ============ -->
+        <section id="view-log" class="view" hidden>
+          <div class="view-head">
+            <h1>Registro</h1>
+            <button class="btn small" id="btn-retry-all" type="button" hidden>
+              <svg><use href="#i-rotate" /></svg>Riprova ora
+            </button>
+          </div>
+          <div class="seg fit" id="log-filter" role="group" aria-label="Mostra">
+            <button type="button" data-filter="all" class="on" aria-pressed="true">
+              Tutti <span class="count"></span>
+            </button>
+            <button type="button" data-filter="todo" aria-pressed="false">
+              Da caricare <span class="count"></span>
+            </button>
+            <button type="button" data-filter="done" aria-pressed="false">Caricati <span class="count"></span></button>
+          </div>
+          <ul class="log-list" id="log-list"></ul>
+          <p class="log-note muted" id="log-note">
+            <svg><use href="#i-cloud-check" /></svg
+            ><span
+              >Gli scontrini con la spunta sono al sicuro su OneDrive: puoi eliminare le foto dalla galleria del
+              telefono.</span
+            >
+          </p>
+          <button class="link" id="btn-clear-done" type="button" hidden>Rimuovi i caricati dal registro</button>
+        </section>
+
+        <!-- ============ IMPOSTAZIONI ============ -->
+        <section id="view-settings" class="view" hidden>
+          <div class="view-head"><h1>Impostazioni</h1></div>
+
+          <div class="card">
+            <div class="card-head">
+              <h2 class="card-title">Il tuo dispositivo</h2>
+              <span class="check-summary" id="s-check-summary"></span>
+            </div>
+            <ul class="checks" id="s-checks"></ul>
+          </div>
+
+          <div class="card">
+            <h2 class="card-title">Profilo</h2>
+            <label class="field">
+              <span class="label">Il tuo nome</span>
+              <input id="s-name" type="text" autocomplete="name" />
+              <small class="hint">Viene salvato nei dati di ogni scontrino che carichi.</small>
+            </label>
+            <label class="field">
+              <span class="label">Dispositivo</span>
+              <input id="s-device" type="text" />
+            </label>
+            <div class="field">
+              <span class="label">Branca predefinita</span>
+              <div class="seg wrap branches" id="s-branca" aria-label="Branca predefinita" role="radiogroup"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2 class="card-title">Cartella OneDrive</h2>
+            <div class="kv" id="s-target"></div>
+            <div class="action-list">
+              <button class="action-row" id="btn-invite" type="button">
+                <svg aria-hidden="true"><use href="#i-share" /></svg>
+                <span
+                  ><b>Invita qualcuno</b
+                  ><small
+                    >Link all'app con la cartella già impostata. Con “Persone specifiche” aggiungi anche il suo
+                    indirizzo in OneDrive.</small
+                  ></span
+                ><svg class="chevron" aria-hidden="true"><use href="#i-right" /></svg>
+              </button>
+              <a class="action-row" id="s-open-folder" target="_blank" rel="noopener noreferrer" hidden>
+                <svg aria-hidden="true"><use href="#i-external" /></svg>
+                <span><b>Apri in OneDrive</b></span>
+              </a>
+              <button class="action-row" id="btn-change-folder" type="button">
+                <svg aria-hidden="true"><use href="#i-folder" /></svg>
+                <span><b>Cambia cartella</b></span
+                ><svg class="chevron" aria-hidden="true"><use href="#i-right" /></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2 class="card-title">Acquisizione</h2>
+            <label class="switch-row"
+              ><span><b>Salva la posizione</b><small>Coordinate GPS nei metadati del file</small></span
+              ><input type="checkbox" id="s-location"
+            /></label>
+            <label class="switch-row"
+              ><span><b>Lettura automatica (OCR)</b><small>Propone data, esercente e importo</small></span
+              ><input type="checkbox" id="s-ocr"
+            /></label>
+            <label class="switch-row" id="row-wifi"
+              ><span><b>Carica solo con Wi‑Fi</b><small id="wifi-note">Altrimenti usa anche la rete dati</small></span
+              ><input type="checkbox" id="s-wifi"
+            /></label>
+            <div class="field slider-field">
+              <label class="label" for="s-intensity">Intensità predefinita del miglioramento</label>
+              <input class="slider" type="range" id="s-intensity" min="0" max="100" step="5" />
+              <small class="hint">Si può sempre cambiare foto per foto.</small>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2 class="card-title">Aspetto</h2>
+            <div class="field">
+              <span class="label" id="s-theme-label">Tema</span>
+              <div class="seg fit" id="s-theme" role="radiogroup" aria-labelledby="s-theme-label"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2 class="card-title">Account</h2>
+            <div class="kv" id="s-account"></div>
+            <div class="action-list">
+              <button class="action-row" id="btn-copy-account" type="button">
+                <svg aria-hidden="true"><use href="#i-copy" /></svg>
+                <span
+                  ><b>Copia indirizzo</b
+                  ><small>La cartella deve essere condivisa proprio con questo indirizzo</small></span
+                >
+              </button>
+              <button class="action-row" id="btn-switch-account" type="button">
+                <svg aria-hidden="true"><use href="#i-user" /></svg>
+                <span><b>Cambia account</b></span
+                ><svg class="chevron" aria-hidden="true"><use href="#i-right" /></svg>
+              </button>
+              <button class="action-row danger" id="btn-logout" type="button">
+                <svg aria-hidden="true"><use href="#i-logout" /></svg>
+                <span><b>Esci</b></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="card help">
+            <h2 class="card-title">Aiuto</h2>
+            <details class="disclosure">
+              <summary>Come fare una buona foto</summary>
+              <ul>
+                <li>Appoggia lo scontrino su un fondo <b>scuro</b> e uniforme (tavolo, quaderno, zaino).</li>
+                <li>Luce buona e niente ombra del telefono: meglio vicino a una finestra.</li>
+                <li>Inquadra tutto lo scontrino, dritto e senza pieghe: lo ritaglio e lo raddrizzo io.</li>
+                <li>Se gli angoli gialli non sono giusti, trascinali (anche dai lati) prima di andare avanti.</li>
+              </ul>
+            </details>
+            <details class="disclosure">
+              <summary>Scontrini lunghi</summary>
+              <ul>
+                <li>Fai più foto, ognuna con un pezzo di scontrino che si <b>sovrappone</b> un po' alla precedente.</li>
+                <li>L'ordine non conta: le unisco in un'unica immagine.</li>
+                <li>Se una foto non si collega alle altre la metto accanto, su sfondo nero.</li>
+              </ul>
+            </details>
+            <details class="disclosure">
+              <summary>Se qualcosa non va</summary>
+              <dl class="faq">
+                <dt>“Non hai accesso a questa cartella”</dt>
+                <dd>
+                  La cartella non è condivisa con l'account con cui hai fatto l'accesso (sezione <i>Account</i>). Tocca
+                  <i>Richiedi accesso su OneDrive</i>, oppure <i>Cambia account</i> se è condivisa con un altro tuo
+                  indirizzo.
+                </dd>
+                <dt>“Accesso scaduto”</dt>
+                <dd>Tocca <i>Accedi</i>: Microsoft chiede ogni tanto di confermare. La coda non si perde.</dd>
+                <dt>Non carica</dt>
+                <dd>
+                  I caricamenti avvengono solo con l'app aperta. Controlla la connessione e l'opzione
+                  <i>Carica solo con Wi‑Fi</i>, poi apri il <i>Registro</i> e tocca <i>Riprova ora</i>.
+                </dd>
+                <dt>Nome o cartella sbagliati</dt>
+                <dd>Correggili direttamente su OneDrive: l'app serve solo a fotografare e archiviare.</dd>
+                <dt>Cambio telefono</dt>
+                <dd>
+                  Prima controlla che nel <i>Registro</i> sia tutto caricato. Sul nuovo telefono apri di nuovo il link
+                  di invito.
+                </dd>
+              </dl>
+            </details>
+          </div>
+
+          <div class="card">
+            <h2 class="card-title">Archivio sul dispositivo</h2>
+            <div class="kv" id="s-storage"></div>
+          </div>
+
+          <p class="about muted" id="about"></p>
+        </section>
+      </main>
+
+      <nav class="tabbar" id="tabbar" aria-label="Sezioni">
+        <button type="button" data-view="new" class="on" aria-current="page">
+          <span class="nav-icon"
+            ><svg aria-hidden="true"><use href="#i-camera" /></svg></span
+          ><span>Nuovo</span>
+        </button>
+        <button type="button" data-view="log">
+          <span class="nav-icon"
+            ><svg aria-hidden="true"><use href="#i-list" /></svg><b class="badge" id="tab-badge" hidden></b></span
+          ><span>Registro</span>
+        </button>
+        <button type="button" data-view="settings">
+          <span class="nav-icon"
+            ><svg aria-hidden="true"><use href="#i-sliders" /></svg></span
+          ><span>Impostazioni</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- ============ SCANNER (ritaglio + miglioramento) ============ -->
+    <div id="scanner" class="scanner" hidden role="dialog" aria-modal="true" aria-labelledby="sc-title">
+      <header class="sc-head">
+        <button class="icon-btn" id="sc-cancel" type="button" aria-label="Scarta questa foto">
+          <svg><use href="#i-x" /></svg>
+        </button>
+        <div class="sc-title">
+          <strong id="sc-title">Ritaglio</strong>
+          <small id="sc-sub"></small>
+        </div>
+        <div class="sc-dots" aria-hidden="true"><i data-dot="crop"></i><i data-dot="enhance"></i></div>
+      </header>
+      <div class="sc-stage" id="sc-stage">
+        <canvas id="sc-canvas"></canvas>
+        <canvas
+          id="sc-preview"
+          tabindex="0"
+          role="img"
+          aria-label="Anteprima migliorata. Tieni premuto, o premi la barra spaziatrice, per vedere l'originale"
+          hidden
+        ></canvas>
+        <span class="sc-compare-hint" id="sc-compare-hint" aria-hidden="true" hidden
+          >Tieni premuto per l’originale</span
+        >
+        <canvas id="sc-loupe" class="loupe" width="220" height="220" hidden></canvas>
+        <div class="sc-busy" id="sc-busy" hidden>
+          <span class="spinner light"></span><span id="sc-busy-text">Elaborazione…</span>
+        </div>
+      </div>
+      <footer class="sc-foot">
+        <div class="sc-step" data-step="crop">
+          <p class="sc-hint" id="sc-crop-hint">Trascina gli angoli sui bordi dello scontrino</p>
+          <div class="sc-tools">
+            <button type="button" data-sc="rotate">
+              <svg><use href="#i-rotate" /></svg><span>Ruota</span>
+            </button>
+            <button type="button" data-sc="auto">
+              <svg><use href="#i-wand" /></svg><span>Rileva</span>
+            </button>
+            <button type="button" data-sc="full">
+              <svg><use href="#i-scan" /></svg><span>Intera</span>
+            </button>
+          </div>
+          <button class="btn primary block" type="button" data-sc="next">
+            Avanti<svg><use href="#i-right" /></svg>
+          </button>
+        </div>
+        <div class="sc-step" data-step="enhance" hidden>
+          <div class="sc-group">
+            <div class="sc-group-head">
+              <label for="sc-intensity">Intensità</label>
+              <button
+                type="button"
+                class="sc-icon-btn"
+                data-sc="reset-int"
+                aria-label="Ripristina l'intensità predefinita"
+                title="Ripristina l'intensità predefinita"
+              >
+                <svg aria-hidden="true"><use href="#i-undo" /></svg>
+              </button>
+            </div>
+            <input class="slider" type="range" id="sc-intensity" min="0" max="100" step="1" />
+          </div>
+          <div class="sc-segmented" id="sc-mode" role="radiogroup" aria-label="Colore"></div>
+          <div class="sc-actions">
+            <button class="btn sc-tonal" type="button" data-sc="back">
+              <svg aria-hidden="true"><use href="#i-left" /></svg>Ritaglio
+            </button>
+            <button class="btn primary grow" type="button" data-sc="done">
+              <svg aria-hidden="true"><use href="#i-check" /></svg>Conferma
+            </button>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <!-- ============ VISUALIZZATORE ============ -->
+    <div id="viewer" class="viewer" hidden role="dialog" aria-modal="true" aria-label="Anteprima">
+      <header class="viewer-head">
+        <span id="viewer-title">Anteprima</span>
+        <button class="icon-btn" id="viewer-close" type="button" aria-label="Chiudi">
+          <svg><use href="#i-x" /></svg>
+        </button>
+      </header>
+      <div class="viewer-body" id="viewer-body"><img id="viewer-img" alt="" /></div>
+      <p class="viewer-hint">Tocca per ingrandire</p>
+    </div>
+
+    <!-- ============ DIALOGO ============ -->
+    <dialog id="dialog" class="dialog">
+      <form method="dialog">
+        <h3 id="dialog-title"></h3>
+        <div id="dialog-body"></div>
+        <div class="dialog-actions">
+          <button value="cancel" class="btn" id="dialog-cancel">Annulla</button>
+          <button value="ok" class="btn primary" id="dialog-ok">OK</button>
+        </div>
+      </form>
+    </dialog>
+
+    <input type="file" id="in-camera" accept="image/*" capture="environment" hidden />
+    <input type="file" id="in-gallery" accept="image/*" multiple hidden />
+    <div id="busy" class="busy-overlay" hidden>
+      <div class="busy-card"><span class="spinner"></span><span id="busy-text">Attendi…</span></div>
+    </div>
+    <div id="toasts" class="toasts" aria-live="polite"></div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

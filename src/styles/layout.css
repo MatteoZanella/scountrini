@@ -1,0 +1,315 @@
+/*
+ * Adaptive layout, following Material 3 window size classes:
+ * - compact (< 600px): bottom navigation bar (also the iOS tab-bar pattern)
+ * - medium/expanded (≥ 600px): navigation rail on the left
+ * - expanded (≥ 1024px): wider pages use two columns
+ * Content is centred in a readable column; the top bar and notices line up with it.
+ */
+
+#app {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  --page-w: var(--content-w);
+  --gutter: max(16px, calc((100% - var(--page-w)) / 2));
+}
+
+/* Wide pages (expanded windows): top bar, notices and content share one width */
+@media (min-width: 1024px) {
+  body[data-view='log'] #app,
+  body[data-view='settings'] #app,
+  body[data-view='new']:has(#doc-editor:not([hidden])) #app {
+    --page-w: 1088px;
+  }
+}
+
+/* ---------- Top bar ---------- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: calc(var(--safe-top) + 60px);
+  padding: calc(var(--safe-top) + 8px) var(--gutter) 8px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: saturate(1.4) blur(12px);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  font-size: 1.15rem;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.brand-mark svg {
+  width: 20px;
+  height: 20px;
+}
+
+.queue-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.queue-chip svg {
+  width: 18px;
+  height: 18px;
+}
+
+.queue-chip.ok {
+  color: var(--ok);
+}
+
+.queue-chip.err {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: var(--danger);
+}
+
+.queue-chip.pending,
+.queue-chip.busy {
+  color: var(--warn);
+}
+
+/* ---------- Notice ---------- */
+.notice {
+  padding: 0 var(--gutter) 8px;
+}
+
+.notice-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.notice-inner span {
+  flex: 1;
+}
+
+.notice-inner.warn {
+  background: var(--warn-soft);
+}
+
+.notice-inner.warn > svg {
+  color: var(--warn);
+}
+
+.notice-inner.info {
+  background: var(--info-soft);
+}
+
+.notice-inner.info > svg {
+  color: var(--accent);
+}
+
+.notice-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 0 14px;
+  background: var(--surface);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.notice-btn:has(> svg:only-child) {
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+}
+
+.notice-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ---------- Main ---------- */
+main {
+  flex: 1;
+  width: 100%;
+  max-width: calc(var(--page-w) + 32px);
+  margin: 0 auto;
+  padding: 8px 16px calc(var(--nav-h) + var(--safe-bottom) + 24px);
+}
+
+body[data-view='new'] main:has(#doc-editor:not([hidden])) {
+  padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 100px);
+}
+
+body[data-view='setup'] main {
+  padding-bottom: calc(var(--safe-bottom) + 32px);
+}
+
+.view-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0 16px;
+}
+
+/* ---------- Navigation: bottom bar (compact) ---------- */
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  display: flex;
+  justify-content: center;
+  height: calc(var(--nav-h) + var(--safe-bottom));
+  padding: 0 4px var(--safe-bottom);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  backdrop-filter: saturate(1.4) blur(14px);
+  border-top: 1px solid var(--border);
+}
+
+.tabbar button {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  max-width: 168px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Active indicator pill behind the icon (Material 3): shape + colour + weight */
+.tabbar .nav-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 32px;
+  border-radius: 16px;
+  transition: background 0.2s;
+}
+
+.tabbar button svg {
+  width: 24px;
+  height: 24px;
+}
+
+.tabbar button.on {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.tabbar button.on .nav-icon {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+@media (hover: hover) {
+  .tabbar button:not(.on):hover .nav-icon {
+    background: var(--surface-2);
+  }
+}
+
+.badge {
+  position: absolute;
+  top: -4px;
+  left: calc(50% + 8px);
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  border: 2px solid var(--surface);
+  background: var(--warn);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 16px;
+  text-align: center;
+}
+
+.badge.err {
+  background: var(--danger);
+}
+
+/* ---------- Navigation: rail (medium and expanded) ---------- */
+@media (min-width: 600px) {
+  #app {
+    padding-left: calc(var(--rail-w) + var(--safe-left));
+  }
+
+  body[data-view='setup'] #app {
+    padding-left: 0;
+  }
+
+  .tabbar {
+    top: 0;
+    right: auto;
+    width: calc(var(--rail-w) + var(--safe-left));
+    height: auto;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: calc(var(--safe-top) + 72px) 0 16px var(--safe-left);
+    border-top: 0;
+    border-right: 1px solid var(--border);
+  }
+
+  .tabbar button {
+    flex: none;
+    min-height: 64px;
+    max-width: none;
+  }
+
+  main {
+    padding-bottom: 40px;
+  }
+
+  body[data-view='new'] main:has(#doc-editor:not([hidden])) {
+    padding-bottom: 120px;
+  }
+}
+
+/* The setup view has its own "install first" box: no duplicate notice */
+body[data-view='setup'] .notice:has(.notice-inner.info) {
+  display: none;
+}

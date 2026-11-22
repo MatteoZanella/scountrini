@@ -1,0 +1,131 @@
+/*
+ * Design tokens. Palette from the AGESCI coordinated-image manual (2016):
+ * Viola AGESCI #462678 (+ #211638, #6B478D), branch colours #FDC500 / #21A067 /
+ * #E74030, secondary sand #E5D6C7 / #ECE9E6 and lavender #AEB0D9.
+ * Every text/background pair below is ≥ 4.5:1 and every control boundary
+ * ≥ 3:1 (WCAG 2.2 AA 1.4.3 / 1.4.11), in both themes.
+ */
+:root {
+  color-scheme: light dark;
+
+  /* Surfaces: warm sand neutrals */
+  --bg: #f6f3ef;
+  --surface: #ffffff;
+  --surface-2: #efeae4;
+  --surface-3: #e5d6c7;
+
+  /* Text */
+  --text: #1e1a29;
+  --text-2: #4c4659;
+  --text-3: #6a6477;
+
+  /* Lines: --border is decorative, --border-strong outlines controls (≥ 3:1) */
+  --border: #e2dcd4;
+  --border-strong: #857e91;
+
+  /* Brand: Viola AGESCI */
+  --accent: #462678;
+  --accent-strong: #211638;
+  --accent-soft: #ece6f5;
+  --on-accent: #ffffff;
+  --focus: #462678;
+
+  /* Branches (decorative: always paired with the branch name) */
+  --lc: #fdc500;
+  --eg: #21a067;
+  --rs: #e74030;
+  --branch-ring: rgb(30 26 41 / 35%);
+
+  /* Status */
+  --danger: #b3261e;
+  --danger-soft: #fbe7e4;
+  --warn: #8a5300;
+  --warn-soft: #fcf0d6;
+  --ok: #17734a;
+  --ok-soft: #e1f3e9;
+  --info-soft: #e9e9f6;
+
+  --shadow: 0 1px 2px rgb(33 22 56 / 6%), 0 4px 16px rgb(33 22 56 / 6%);
+  --shadow-lg: 0 12px 40px rgb(33 22 56 / 20%);
+
+  --radius: 16px;
+  --radius-sm: 12px;
+  /* Minimum touch target: Material 48dp ≥ Apple 44pt ≥ WCAG 2.5.8 24px */
+  --tap: 48px;
+
+  /* System UI font: Roboto on Android (AGESCI's official typeface), SF on iOS,
+     so text follows the platform and its accessibility sizes */
+  --font: system-ui, -apple-system, Roboto, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, monospace;
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --nav-h: 72px; /* bottom navigation bar (compact windows) */
+  --rail-w: 96px; /* navigation rail (medium and expanded windows) */
+  --content-w: 720px;
+}
+
+/* Theme: "Automatico" follows the system, "Chiaro"/"Scuro" force it
+   (data-theme on <html>, set before the first paint by index.html). The dark
+   values are listed twice because CSS cannot OR a media query with a selector. */
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #14111b;
+  --surface: #1d1927;
+  --surface-2: #282233;
+  --surface-3: #332b41;
+  --text: #f3f0f8;
+  --text-2: #c9c2d6;
+  --text-3: #a39bb2;
+  --border: #342d40;
+  --border-strong: #7d7590;
+  --accent: #c4b2ec;
+  --accent-strong: #ddd0fa;
+  --accent-soft: #33284a;
+  --on-accent: #211638;
+  --focus: #c4b2ec;
+  --branch-ring: rgb(255 255 255 / 25%);
+  --danger: #ff8a7a;
+  --danger-soft: #3e1f1b;
+  --warn: #f2b84b;
+  --warn-soft: #3a2c12;
+  --ok: #5ccb93;
+  --ok-soft: #173126;
+  --info-soft: #262338;
+  --shadow: 0 1px 2px rgb(0 0 0 / 35%);
+  --shadow-lg: 0 12px 40px rgb(0 0 0 / 55%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #14111b;
+    --surface: #1d1927;
+    --surface-2: #282233;
+    --surface-3: #332b41;
+    --text: #f3f0f8;
+    --text-2: #c9c2d6;
+    --text-3: #a39bb2;
+    --border: #342d40;
+    --border-strong: #7d7590;
+    --accent: #c4b2ec;
+    --accent-strong: #ddd0fa;
+    --accent-soft: #33284a;
+    --on-accent: #211638;
+    --focus: #c4b2ec;
+    --branch-ring: rgb(255 255 255 / 25%);
+    --danger: #ff8a7a;
+    --danger-soft: #3e1f1b;
+    --warn: #f2b84b;
+    --warn-soft: #3a2c12;
+    --ok: #5ccb93;
+    --ok-soft: #173126;
+    --info-soft: #262338;
+    --shadow: 0 1px 2px rgb(0 0 0 / 35%);
+    --shadow-lg: 0 12px 40px rgb(0 0 0 / 55%);
+  }
+}

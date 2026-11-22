@@ -1,0 +1,43 @@
+{
+  "name": "scountrini",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PWA statica per fotografare scontrini e archiviarli su OneDrive per anno associativo e branca.",
+  "type": "module",
+  "engines": {
+    "node": "^22.12.0 || >=24.0.0"
+  },
+  "scripts": {
+    "prepare-assets": "node scripts/prepare-assets.mjs",
+    "dev": "npm run prepare-assets && vite --host",
+    "build": "npm run prepare-assets && vite build && node scripts/generate-sw.mjs",
+    "preview": "vite preview --host",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "test:e2e": "node tests/e2e/run-pipeline.mjs"
+  },
+  "dependencies": {
+    "@azure/msal-browser": "^4.30.0",
+    "@jsquash/webp": "1.5.0",
+    "@techstark/opencv-js": "4.10.0-release.1",
+    "@tesseract.js-data/ita": "^1.0.0",
+    "jscanify": "1.4.2",
+    "tesseract.js": "6.0.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.15.0",
+    "globals": "^17.14.0",
+    "prettier": "^3.10.1",
+    "puppeteer-core": "^25.18.1",
+    "sharp": "^0.35.5",
+    "vite": "^7.0.0",
+    "vitest": "^4.1.12"
+  },
+  "allowScripts": {
+    "esbuild": true,
+    "canvas": false,
+    "tesseract.js": false
+  }
+}
