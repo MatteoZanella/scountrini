@@ -139,18 +139,26 @@
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  max-width: 380px;
+  max-width: 460px;
   margin: 28px auto 0;
 }
 
 /* Secondary actions share a row, and stack when text is large or the screen narrow */
 .empty-actions .btn {
-  flex: 1 1 9.5rem;
+  flex: 1 1 8.5rem;
   padding: 0 16px;
 }
 
 .empty-actions .btn.primary {
   flex-basis: 100%;
+}
+
+.empty-hint {
+  max-width: 360px;
+  margin: 12px auto 0;
+  font-size: 0.8rem;
+  color: var(--text-2);
+  text-align: center;
 }
 
 /* Full-window drop target while dragging photos over the "Nuovo" view */

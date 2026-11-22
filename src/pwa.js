@@ -1,6 +1,7 @@
 // Service worker registration with an "update available" prompt, and the
 // install prompt (Chrome/Edge/Android only; iOS has no install API).
 
+import { registerSW } from 'virtual:pwa-register';
 import { toast } from './ui/dom.js';
 
 let deferredInstall = null;
@@ -31,40 +32,25 @@ export async function promptInstall() {
   return outcome === 'accepted';
 }
 
+/**
+ * Registers the service worker (vite-plugin-pwa + workbox-window; a no-op in
+ * dev). A new version waits until the user taps "Aggiorna", then the page
+ * reloads once it takes over: never on the first visit.
+ */
 export function registerServiceWorker() {
-  if (!('serviceWorker' in navigator) || import.meta.env.DEV) return;
-  const url = `${import.meta.env.BASE_URL}sw.js`;
-  navigator.serviceWorker
-    .register(url)
-    .then((reg) => {
-      const promptUpdate = (worker) =>
-        toast('Nuova versione disponibile', {
-          timeout: 0,
-          action: { label: 'Aggiorna', run: () => worker.postMessage({ type: 'SKIP_WAITING' }) },
-        });
-      if (reg.waiting && navigator.serviceWorker.controller) promptUpdate(reg.waiting);
-      reg.addEventListener('updatefound', () => {
-        const w = reg.installing;
-        w?.addEventListener('statechange', () => {
-          if (w.state === 'installed' && navigator.serviceWorker.controller) promptUpdate(w);
-        });
-      });
-      // Check for updates when the app comes back to the foreground
+  const updateSW = registerSW({
+    onNeedRefresh: () =>
+      toast('Nuova versione disponibile', {
+        timeout: 0,
+        action: { label: 'Aggiorna', run: () => updateSW(true) },
+      }),
+    // Check for updates when the app comes back to the foreground
+    onRegisteredSW: (_url, reg) =>
+      reg &&
       document.addEventListener(
         'visibilitychange',
         () => document.visibilityState === 'visible' && reg.update().catch(() => {}),
-      );
-    })
-    .catch((e) => console.warn('Service worker registration failed', e));
-
-  // Reload only when a *new version* takes over. On the very first visit
-  // clients.claim() also fires controllerchange: reloading then would
-  // interrupt whatever the user is doing.
-  const hadController = Boolean(navigator.serviceWorker.controller);
-  let reloading = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (reloading || !hadController) return;
-    reloading = true;
-    location.reload();
+      ),
+    onRegisterError: (e) => console.warn('Service worker registration failed', e),
   });
 }

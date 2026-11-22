@@ -2,7 +2,7 @@
 // (offline / sign-in expired / install hint).
 
 import { settings } from '../core/settings.js';
-import { isIOS, isStandalone } from '../core/device.js';
+import { isAndroid, isIOS, isStandalone } from '../core/device.js';
 import { jobs } from '../storage/db.js';
 import { reauthenticate } from '../cloud/auth.js';
 import { uploadQueue } from '../cloud/upload-queue.js';
@@ -62,6 +62,15 @@ function renderNotice() {
       icon('download'),
       h('span', {}, 'Installa l’app: si apre dalla schermata Home e protegge gli scontrini in coda.'),
       h('button.notice-btn', { type: 'button', onclick: () => promptInstall() }, 'Installa'),
+      dismissInstallHint(),
+    );
+  } else if (offerInstall && isAndroid()) {
+    // No install event (e.g. Firefox): installing is a menu item, say where
+    content = h(
+      'div.notice-inner.info',
+      {},
+      icon('download'),
+      h('span', {}, 'Installa l’app: menu ⋮ → “Installa”.'),
       dismissInstallHint(),
     );
   }

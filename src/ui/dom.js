@@ -86,6 +86,31 @@ export function openDialog({ title, body = '', ok = 'OK', cancel = 'Annulla', da
 
 export const confirmDialog = async (opts) => (await openDialog(opts)) === 'ok';
 
+/**
+ * Lets the system back gesture (or the browser's Back) close a full-screen
+ * overlay instead of changing section or leaving the app: adds a history entry
+ * while it is open. `onBack` runs when the user goes back; call the returned
+ * function when the overlay closes another way, to drop that entry.
+ */
+export function closeOnBack(onBack) {
+  history.pushState({ overlay: true }, '');
+  let armed = true;
+  const disarm = () => {
+    armed = false;
+    removeEventListener('popstate', onPop);
+  };
+  const onPop = () => {
+    disarm();
+    onBack();
+  };
+  addEventListener('popstate', onPop);
+  return () => {
+    if (!armed) return;
+    disarm();
+    history.back();
+  };
+}
+
 // ---- Segmented controls ----
 /** Renders single-choice buttons (optional `icon` per option) into `container`; returns { set(value) }. */
 export function segmented(container, options, { value, onChange } = {}) {

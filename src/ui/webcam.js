@@ -1,11 +1,16 @@
-// Camera capture for desktops. Phones use <input capture>, which opens the
-// system camera app (autofocus, flash, full resolution); desktop browsers
-// ignore `capture` and show a file picker, so there we film from the webcam.
+// In-app camera, where <input capture> doesn't open one. Phones use it to get
+// the system camera app (autofocus, flash, full resolution); desktop browsers
+// and Firefox for Android ignore `capture` and show a file picker instead.
 
-import { h, icon, toast } from './dom.js';
+import { isFirefoxAndroid } from '../core/device.js';
+import { closeOnBack, h, icon, toast } from './dom.js';
 
-/** True where <input capture> opens a camera: touch-first devices. */
-export const hasSystemCamera = () => matchMedia('(pointer: coarse)').matches;
+/**
+ * True where <input capture> opens the camera: touch-first devices. Firefox for
+ * Android ignores `capture` and shows its file picker instead, the same one as
+ * the gallery input, so there the app films from its own camera view.
+ */
+export const hasSystemCamera = () => matchMedia('(pointer: coarse)').matches && !isFirefoxAndroid();
 
 export const canUseWebcam = () => Boolean(navigator.mediaDevices?.getUserMedia);
 
@@ -48,7 +53,9 @@ export async function captureFromWebcam() {
   shutter.focus();
 
   return new Promise((resolve) => {
+    const releaseBack = closeOnBack(() => finish(null));
     const finish = (file) => {
+      releaseBack();
       stream.getTracks().forEach((t) => t.stop());
       document.removeEventListener('keydown', onKey);
       document.body.classList.remove('modal-open');

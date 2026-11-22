@@ -29,6 +29,11 @@ export function isIOS() {
 
 export const isAndroid = () => /Android/.test(navigator.userAgent);
 
+export const isFirefox = () => /Firefox\//.test(navigator.userAgent); // Gecko only, not Firefox for iOS
+
+/** Firefox for Android has no Android photo picker: image inputs open its file manager. */
+export const isFirefoxAndroid = () => isAndroid() && isFirefox();
+
 export function isStandalone() {
   return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 }

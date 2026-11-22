@@ -3,7 +3,7 @@
 import './styles/main.css';
 import { CONFIG } from './config.js';
 import { settings } from './core/settings.js';
-import { guessDeviceName } from './core/device.js';
+import { guessDeviceName, isFirefox } from './core/device.js';
 import { requestPersistence } from './storage/db.js';
 import { initAuth } from './cloud/auth.js';
 import { captureInviteFromUrl } from './cloud/destination.js';
@@ -22,7 +22,16 @@ import { initSettings, renderSettings } from './ui/views/settings-view.js';
 const VIEWS = ['setup', 'new', 'log', 'settings'];
 const onEnter = { setup: renderSetup, new: refreshComposer, log: renderLog, settings: renderSettings };
 
-function showView(name) {
+let currentView = null;
+
+const viewFromUrl = () => {
+  const name = location.hash.slice(1);
+  return VIEWS.includes(name) ? name : null;
+};
+
+/** Shows a view without touching the history. */
+function renderView(name) {
+  currentView = name;
   for (const v of VIEWS) show($(`#view-${v}`), v === name);
   show($('#tabbar'), name !== 'setup');
   for (const b of $$('#tabbar [data-view]')) {
@@ -35,6 +44,34 @@ function showView(name) {
   window.scrollTo(0, 0);
   onEnter[name]?.();
 }
+
+const HOME = 'new';
+
+/**
+ * Switches section following Android's tab pattern: the back gesture from any
+ * section returns to "Nuovo", and from "Nuovo" leaves the app. So at most one
+ * history entry (flagged `aboveHome`) sits on top of the home one, however
+ * many tabs are visited. The hash keeps the section across a reload.
+ *
+ * @param {'setup'|'new'|'log'|'settings'} name
+ */
+function showView(name) {
+  if (name === currentView) return;
+  const aboveHome = Boolean(history.state?.aboveHome);
+  if (name === HOME && aboveHome) return history.back(); // popstate renders it
+  const state = { view: name, aboveHome: name !== HOME && (aboveHome || currentView === HOME) };
+  if (currentView === HOME && name !== HOME) history.pushState(state, '', `#${name}`);
+  else history.replaceState(state, '', `#${name}`);
+  renderView(name);
+}
+
+// Back/forward between sections. Overlays (scanner, viewer, camera) add their
+// own entries on top of the current section's: popping those lands here on the
+// section already shown, so nothing changes.
+addEventListener('popstate', (e) => {
+  const name = e.state?.view || viewFromUrl();
+  if (name && name !== currentView) renderView(name);
+});
 
 function preloadHeavyAssets() {
   // Warm OpenCV (and OCR) in the background so the scanner opens instantly
@@ -58,7 +95,7 @@ async function main() {
     toast('Accesso Microsoft non disponibile', { type: 'error' });
   }
 
-  initSetup({ onDone: () => showView('new') });
+  initSetup({ onDone: () => showView(HOME) });
   initComposer();
   initLog();
   initSettings({ onChangeFolder: () => showView('setup') });
@@ -70,13 +107,24 @@ async function main() {
   });
 
   await autoLinkPendingInvite();
-  showView(isSetupComplete() ? 'new' : 'setup');
+  // First paint: the section in the URL (reload), keeping its history entry
+  const first = isSetupComplete() ? viewFromUrl() || HOME : 'setup';
+  history.replaceState(
+    { view: first, aboveHome: first !== HOME && Boolean(history.state?.aboveHome) },
+    '',
+    `#${first}`,
+  );
+  renderView(first);
 
   uploadQueue.addEventListener('change', () => document.body.dataset.view === 'log' && renderLog());
   await uploadQueue.init();
   refreshStatus();
   registerServiceWorker();
-  requestPersistence();
+  // Chromium and Safari grant storage persistence silently (installed app,
+  // engagement), so ask on launch. Firefox shows a permission prompt instead:
+  // there it is asked from the device checklist, on a tap, so an unexpected
+  // prompt at launch doesn't get refused and remembered.
+  if (!isFirefox()) requestPersistence();
   preloadHeavyAssets();
 }
 

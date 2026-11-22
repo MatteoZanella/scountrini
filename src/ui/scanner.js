@@ -9,7 +9,7 @@ import { warpDocument } from '../imaging/perspective.js';
 import { estimateBackground, enhanceWithBackground } from '../imaging/enhance.js';
 import { getRotatedSource, renderPage } from '../document/pages.js';
 import { CornerEditor } from './corner-editor.js';
-import { $, $$, show, segmented, toast } from './dom.js';
+import { $, $$, closeOnBack, show, segmented, toast } from './dom.js';
 
 const root = $('#scanner');
 const els = {
@@ -182,16 +182,20 @@ els.preview.addEventListener('keyup', (e) => e.key === ' ' && showOriginal(false
 
 $('#sc-cancel').addEventListener('click', () => close(null));
 
-// Android back button closes the sheet instead of leaving the app
-addEventListener('popstate', () => session && close(null, { fromHistory: true }));
+// Back gesture: from "Miglioramento" back to "Ritaglio", from there it discards
+function onBack() {
+  if (session?.step !== 'enhance') return close(null);
+  session.releaseBack = closeOnBack(onBack);
+  showCrop();
+}
 
-function close(result, { fromHistory = false } = {}) {
+function close(result) {
   if (!session) return;
-  const { resolve } = session;
+  const { resolve, releaseBack } = session;
   session = null;
   show(root, false);
   document.body.classList.remove('modal-open');
-  if (!fromHistory && history.state?.scanner) history.back();
+  releaseBack();
   resolve(result);
 }
 
@@ -202,14 +206,13 @@ function close(result, { fromHistory = false } = {}) {
 export function openScanner(page, { subtitle = '', detected = true, startAt = 'crop' } = {}) {
   editor ||= new CornerEditor(els.canvas, $('#sc-loupe'), els.stage);
   return new Promise((resolve) => {
-    session = { page: { ...page }, resolve, step: 'crop' };
+    session = { page: { ...page }, resolve, step: 'crop', releaseBack: closeOnBack(onBack) };
     els.sub.textContent = subtitle;
     els.hint.textContent = detected
       ? 'Bordi rilevati: controlla gli angoli e prosegui'
       : 'Bordi non trovati: trascina gli angoli sullo scontrino';
     show(root, true);
     document.body.classList.add('modal-open');
-    history.pushState({ scanner: true }, '');
     showCrop().then(() => startAt === 'enhance' && goEnhance());
   });
 }

@@ -16,7 +16,7 @@ Each person signs in with **their own Microsoft account** (and stays signed in).
 
 ## Features
 
-- **Capture**: camera (the system camera app on phones, the webcam on desktop), gallery, **paste** (_Incolla_ button or Ctrl/⌘+V) or drag and drop of image files on desktop. Several photos per document.
+- **Capture**: camera, gallery, files, paste (Ctrl/⌘+V) or drag and drop. Several photos per document. Each browser gets only the pickers it can tell apart (e.g. Firefox for Android: one _Galleria o file_).
 - **Document detection** (jscanify + OpenCV): suggested corners, which you can drag (with a magnifier loupe), rotate, or reset to the full image.
 - **Perspective correction** at native resolution.
 - **Enhancement**: shadow and uneven-light removal, then a tone curve chosen by the **result**: the receipt's paper and ink are measured and mapped to the levels the intensity asks for, so a faded and a dark receipt end up alike at the same intensity. One slider with a **fixed default for every document** (configurable), black and white by default (colour available), press and hold the image to compare with the original.
@@ -135,8 +135,8 @@ The app does not submit the request itself, because Microsoft Graph has no API t
 
 | Command                           | What it does                                                                                                                                    |
 | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run dev`                     | Dev server (copies the vendor files first)                                                                                                      |
-| `npm run build`                   | Build into `dist/` + generates the service worker with the precache list                                                                        |
+| `npm run dev`                     | Dev server                                                                                                                                      |
+| `npm run build`                   | Build into `dist/` (with manifest, icons and offline service worker)                                                                            |
 | `npm run preview`                 | Serves the build locally                                                                                                                        |
 | `npm test`                        | Unit tests (dates/associative year, naming, OCR parser, EXIF/XMP, WebP muxing)                                                                  |
 | `npm run test:e2e`                | Smoke test of the real image pipeline in headless Chrome (detection, stitching, enhancement, WebP + metadata). `E2E_OUT=<dir>` saves the images |
@@ -145,6 +145,7 @@ The app does not submit the request itself, because Microsoft Graph has no API t
 ## Design and accessibility
 
 - **Colours** from the AGESCI coordinated-image manual (2016): Viola AGESCI `#462678` as the brand colour, sand neutrals, and the branch colours (L/C `#FDC500`, E/G `#21A067`, R/S `#E74030`) as dots in the branch selector. Every text colour reaches at least 4.5:1 contrast and every control outline 3:1 (WCAG 2.2 AA), in light and dark themes.
+- **Back gesture**: closes the open screen (scanner, viewer, camera), then returns to _Nuovo_, then leaves the app.
 - **Adaptive layout** following the Material 3 window size classes:
   - phones (< 600 px): bottom navigation bar, the same pattern as the iOS tab bar;
   - tablets and desktop: a navigation rail on the left;
@@ -172,8 +173,8 @@ src/
   ui/                      views/ (setup, composer, log, settings), scanner, corner editor, viewer,
                            status bar, device checklist, access request, paste/drop intake, dialogs
   styles/                  tokens (light/dark), base, components, layout, views, overlays
-  sw/sw.template.js        service worker (precache + offline)
-scripts/                   prepare-assets (vendor + icons), generate-sw (post-build)
+  sw/sw.js                 service worker (Workbox: precache + offline)
+public/icon.svg            app icon: every PNG/ICO size is generated from it at build
 tests/                     unit tests (Vitest) + e2e/ (puppeteer-core)
 ```
 
@@ -206,7 +207,8 @@ Suggestions never overwrite what the user typed. Each rule has a unit test in `t
 All dependencies come from npm and are pinned in `package-lock.json`: nothing third-party is copied into `src/`.
 
 - **Bundled by Vite**: MSAL, jscanify (its browser build, `jscanify/client`), the WebP encoder. Tesseract.js is loaded on demand.
-- **Served as static files**: OpenCV.js (≈ 10 MB) and the Tesseract worker, WebAssembly cores and Italian model (≈ 6 MB). They must be plain files at a known URL, because they are loaded by a `<script>` tag or a Web Worker at runtime rather than imported. `npm run dev` / `npm run build` copy them from `node_modules` into `public/vendor/` (`scripts/prepare-assets.mjs`). That folder is generated, not committed, so updating them means bumping the npm version. Serving them from our own origin instead of a CDN lets the service worker cache them: after the first launch the app works offline, and only uploads need a network.
+- **PWA** (vite-plugin-pwa): manifest, icons and favicon (from `public/icon.svg`), and the Workbox service worker with its update prompt.
+- **Served as static files**: OpenCV.js and the Tesseract worker, cores and Italian model, loaded by URL at runtime. vite-plugin-static-copy serves them from `node_modules` (list in `vite.config.js`), so they are cached for offline use and updated by bumping the npm version.
 - **Install scripts**: npm 11 runs only those approved in `allowScripts` in `package.json`. Only esbuild's is approved. jscanify's Node build pulls in the native `canvas` addon, which the browser build never uses, so its build is denied. tesseract.js's script only prints a funding message.
 
 ## Things to know

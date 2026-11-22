@@ -27,14 +27,14 @@ export const CONFIG = {
     { code: 'EG', label: 'E/G', name: 'Esploratori e Guide' },
     { code: 'RS', label: 'R/S', name: 'Rover e Scolte' },
     { code: 'GRUPPO', label: 'Gruppo', name: 'Gruppo' },
-    { code: 'CDG', label: 'CDG', name: 'CDG' },
+    { code: 'CDG', label: 'C.d.G.', name: 'Casa delle Guardie' },
   ],
 
   // The associative year starts on October 1st
   yearStartMonth: 10,
 
   // Image processing
-  defaultIntensity: 50, // same default for every document, adjustable per photo
+  defaultIntensity: 40, // same default for every document, adjustable per photo
   maxPhotoSide: 4000, // long side cap for imported photos (px)
   maxPagePixels: 12_000_000, // cap for one perspective-corrected photo
   maxOutputPixels: 16_000_000, // cap for the final image (iOS canvas limit)

@@ -4,6 +4,7 @@
 // while the camera app is open.
 
 import { LIMITS } from '../../config.js';
+import { isAndroid, isFirefoxAndroid } from '../../core/device.js';
 import { associativeYear, formatDateIT, toISODate, yearOptions, parseISODate } from '../../core/dates.js';
 import { debounce, normalizeAmount } from '../../core/format.js';
 import { settings } from '../../core/settings.js';
@@ -49,6 +50,7 @@ const els = {
   save: $('#btn-save'),
   camera: $('#in-camera'),
   gallery: $('#in-gallery'),
+  files: $('#in-files'),
 };
 
 const freshForm = () => ({
@@ -319,30 +321,49 @@ async function pick(kind) {
     toast(`Massimo ${LIMITS.maxPagesPerDocument} foto per documento`, { type: 'warn' });
     return;
   }
+  // Camera: the system camera app where <input capture> is honoured, the
+  // in-app camera elsewhere (desktop, Firefox for Android)
   if (kind === 'camera' && !hasSystemCamera() && canUseWebcam()) {
     const file = await captureFromWebcam();
     if (file) addPhotos([file], 'camera');
     return;
   }
-  const input = kind === 'camera' ? els.camera : els.gallery;
+  const input = kind === 'files' ? els.files : kind === 'camera' ? els.camera : els.gallery;
   input.value = '';
   input.click();
+}
+
+/**
+ * Labels of the picker buttons this browser needs (null: not shown).
+ * - Android (Chrome, Samsung…): the image input opens the photo picker, which
+ *   lists the gallery apps (Google Foto…), so files get their own button.
+ * - Firefox for Android has no photo picker: one input opens the file manager.
+ * - iOS: the image input's menu already offers Photos, Camera and Files.
+ * - Desktop: both would open the same file dialog.
+ */
+function photoSources() {
+  if (isFirefoxAndroid()) return { gallery: 'Galleria o file', files: null };
+  if (isAndroid()) return { gallery: 'Galleria', files: 'File' };
+  if (hasSystemCamera()) return { gallery: 'Galleria', files: null };
+  return { gallery: 'Scegli file', files: null };
 }
 
 /** One "+" for further photos; the source is picked in a small sheet. */
 async function chooseSource() {
   const row = (value, iconName, label) =>
-    h('button.action-row', { value }, icon(iconName), h('span', {}, h('b', {}, label)));
+    label && h('button.action-row', { value }, icon(iconName), h('span', {}, h('b', {}, label)));
+  const { gallery, files } = photoSources();
   const body = h(
     'div.action-list',
     {},
     row('camera', 'camera', 'Scatta foto'),
-    row('gallery', 'image', 'Dalla galleria'),
-    canReadClipboardImages() ? row('paste', 'paste', 'Incolla') : null,
+    row('gallery', 'image', gallery),
+    row('files', 'folder', files),
+    canReadClipboardImages() && row('paste', 'paste', 'Incolla'),
   );
   const choice = await openDialog({ title: 'Aggiungi una foto', body, ok: null });
   if (choice === 'paste') pasteFromClipboard();
-  else if (choice === 'camera' || choice === 'gallery') pick(choice);
+  else if (choice === 'camera' || choice === 'gallery' || choice === 'files') pick(choice);
 }
 
 async function pasteFromClipboard() {
@@ -402,7 +423,16 @@ function defaultDateFromPhoto(page) {
 let importing = false;
 
 async function addPhotos(files, origin) {
-  const list = [...files].slice(0, LIMITS.maxPagesPerDocument - state.pages.length);
+  const picked = [...files];
+  // The "File" input has no accept (so the file manager lists everything)
+  const images = picked.filter(
+    (f) => f.type.startsWith('image/') || /\.(jpe?g|png|webp|heic|heif|avif)$/i.test(f.name || ''),
+  );
+  if (picked.length && !images.length) {
+    toast('Scegli un’immagine: JPG, PNG, WebP o HEIC', { type: 'warn' });
+    return;
+  }
+  const list = images.slice(0, LIMITS.maxPagesPerDocument - state.pages.length);
   if (!list.length || importing) return;
   importing = true;
   try {
@@ -563,15 +593,22 @@ async function save() {
 // Wiring
 // --------------------------------------------------------------------------
 export function initComposer() {
+  const { gallery, files } = photoSources();
+  $('[data-act="gallery"] span').textContent = gallery;
+  show($('[data-act="files"]'), Boolean(files));
+  show($('#firefox-gallery-hint'), isFirefoxAndroid());
   document.addEventListener('click', (e) => {
     const act = e.target.closest('[data-act]')?.dataset.act;
-    if (act === 'camera' || act === 'gallery') pick(act);
+    if (act === 'camera' || act === 'gallery' || act === 'files') pick(act);
     if (act === 'paste') pasteFromClipboard();
   });
-  show($('[data-act="paste"]'), canReadClipboardImages());
+  // Pasting a copied image is a desktop path: on phones it crowded the actions
+  // and the clipboard rarely holds an image (the sheet still offers it).
+  show($('[data-act="paste"]'), canReadClipboardImages() && !matchMedia('(pointer: coarse)').matches);
   initPhotoIntake({ isActive: acceptsPhotos, onFiles: addPhotos });
   els.camera.addEventListener('change', () => addPhotos(els.camera.files, 'camera'));
   els.gallery.addEventListener('change', () => addPhotos(els.gallery.files, 'gallery'));
+  els.files.addEventListener('change', () => addPhotos(els.files.files, 'files'));
 
   els.time.addEventListener('change', () => {
     state.form.time = els.time.value;

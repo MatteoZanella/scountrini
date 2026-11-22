@@ -1,13 +1,17 @@
 // Full-screen image viewer: tap to toggle fit / 100% zoom.
 
-import { $, show, objectUrlSlot } from './dom.js';
+import { $, show, objectUrlSlot, closeOnBack } from './dom.js';
 
 const root = $('#viewer');
 const img = $('#viewer-img');
 const body = $('#viewer-body');
 const url = objectUrlSlot();
+let releaseBack = null; // set while open
 
 function close() {
+  if (!releaseBack) return;
+  releaseBack();
+  releaseBack = null;
   show(root, false);
   document.body.classList.remove('modal-open');
   img.removeAttribute('src');
@@ -28,7 +32,7 @@ body.addEventListener('click', (e) => {
   }
 });
 $('#viewer-close').addEventListener('click', close);
-addEventListener('keydown', (e) => e.key === 'Escape' && !root.hidden && close());
+addEventListener('keydown', (e) => e.key === 'Escape' && close());
 
 export function openViewer(blob, title = 'Anteprima') {
   $('#viewer-title').textContent = title;
@@ -36,4 +40,5 @@ export function openViewer(blob, title = 'Anteprima') {
   img.src = url.set(blob);
   show(root, true);
   document.body.classList.add('modal-open');
+  releaseBack ||= closeOnBack(close);
 }

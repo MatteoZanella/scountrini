@@ -16,9 +16,7 @@
       name="description"
       content="Fotografa gli scontrini e archiviali su OneDrive, ordinati per anno associativo e branca."
     />
-    <link rel="manifest" href="./manifest.webmanifest" />
-    <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <!-- Manifest, icon and favicon links are added by vite-plugin-pwa -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -300,12 +298,16 @@
                 <svg aria-hidden="true"><use href="#i-camera" /></svg>Scatta foto
               </button>
               <button class="btn xl" data-act="gallery" type="button">
-                <svg aria-hidden="true"><use href="#i-image" /></svg>Galleria
+                <svg aria-hidden="true"><use href="#i-image" /></svg><span>Galleria</span>
+              </button>
+              <button class="btn xl" data-act="files" type="button">
+                <svg aria-hidden="true"><use href="#i-folder" /></svg>File
               </button>
               <button class="btn xl" data-act="paste" type="button" hidden>
                 <svg aria-hidden="true"><use href="#i-paste" /></svg>Incolla
               </button>
             </div>
+            <p class="empty-hint" id="firefox-gallery-hint" hidden>Le foto sono in <b>Immagini</b> o <b>DCIM</b>.</p>
             <p class="tip">
               <svg><use href="#i-layers" /></svg
               ><span>Scontrino lungo? Fai più foto sovrapponendo un po' le parti: le unisco in automatico.</span>
@@ -704,6 +706,9 @@
 
     <input type="file" id="in-camera" accept="image/*" capture="environment" hidden />
     <input type="file" id="in-gallery" accept="image/*" multiple hidden />
+    <!-- No accept: opens the phone's file manager, so images saved in Download,
+         Drive, etc. can be picked even when the gallery picker does not list them -->
+    <input type="file" id="in-files" multiple hidden />
     <div id="busy" class="busy-overlay" hidden>
       <div class="busy-card"><span class="spinner"></span><span id="busy-text">Attendi…</span></div>
     </div>
