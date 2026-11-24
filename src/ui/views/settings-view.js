@@ -54,7 +54,7 @@ async function shareInvite(shareUrl) {
   const url = buildInviteUrl(shareUrl);
   const data = {
     title: CONFIG.appName,
-    text: 'Apri questo link e accedi con il tuo account Microsoft per caricare gli scontrini:',
+    text: 'Apri questo link e accedi con la tua email per caricare gli scontrini:',
     url,
   };
   try {

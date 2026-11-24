@@ -19,7 +19,7 @@ export async function showAccessRequest({ shareUrl } = {}) {
       {},
       'Hai fatto l’accesso come ',
       h('b', {}, account || '—'),
-      ', ma la cartella non è condivisa con questo indirizzo (o non con permesso di modifica).',
+      ', ma questo indirizzo non ha il permesso di modificare la cartella.',
     ),
     shareUrl
       ? h(
@@ -28,7 +28,7 @@ export async function showAccessRequest({ shareUrl } = {}) {
           'Apri la cartella su OneDrive e tocca ',
           h('b', {}, 'Richiedi accesso'),
           ': OneDrive avvisa il proprietario, che approva la richiesta. Poi torna qui e tocca di nuovo ',
-          h('i', {}, 'Collega cartella'),
+          h('i', {}, 'Accedi'),
           '.',
         )
       : h('p', {}, 'Chiedi a chi gestisce la cartella di condividerla con il tuo indirizzo.'),

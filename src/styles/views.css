@@ -734,6 +734,17 @@ body[data-view='new'] .toasts {
   margin: 4px 0 0 40px;
 }
 
+/* Room between a step's main button and the hint / options below it */
+.step-body > .btn.primary:not(:last-child) {
+  margin-bottom: 12px;
+}
+
+/* Secondary option under a step's main button, on its own line */
+.step-more {
+  display: flex;
+  margin: 4px 0;
+}
+
 .input-row {
   display: flex;
   gap: 8px;

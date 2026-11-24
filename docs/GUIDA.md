@@ -2,15 +2,15 @@
 
 ## La prima volta
 
-Prima di tutto comunica a chi gestisce la cartella **l'indirizzo del tuo account Microsoft** (Outlook/Hotmail/Live o quello che usi per OneDrive): la cartella va condivisa proprio con quello.
+Prima di tutto comunica a chi gestisce la cartella **la tua email** (va bene qualsiasi indirizzo, anche Gmail): la cartella va condivisa proprio con quella.
+
+**Android e computer** — apri il **link di invito** e tocca **Accedi** con la tua email: la cartella si collega da sola. Su Android poi installa l'app con il pulsante **Installa**, oppure dal menu ⋮ → _Aggiungi a schermata Home_ → _Installa_ (su Firefox: ⋮ → _Installa_).
 
 **iPhone** — installa l'app _prima_ di accedere:
 
 1. Apri il **link di invito** in Safari e tocca **Copia il link della cartella**.
 2. Tocca _Condividi_ (su iOS 26 è nel menu ⋯) → **Aggiungi alla schermata Home**.
-3. Apri Scountrini dall'icona nella Home, tocca **Accedi con Microsoft**, poi **Incolla** il link copiato al passo 1 → **Collega cartella**.
-
-**Android** — apri il **link di invito**, tocca **Accedi con Microsoft** (la cartella si collega da sola), poi installa l'app con il pulsante **Installa**, oppure dal menu ⋮ → _Aggiungi a schermata Home_ → _Installa_ (su Firefox: ⋮ → _Installa_).
+3. Apri Scountrini dall'icona nella Home, **incolla** il link copiato al passo 1 → **Accedi** con la tua email.
 
 Infine scrivi il tuo **nome** e scegli la tua **branca** → **Inizia**.
 

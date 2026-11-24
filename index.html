@@ -168,7 +168,8 @@
             ></span>
             <h1>Benvenuto!</h1>
             <p>
-              Fotografa gli scontrini e archiviali nella cartella condivisa su OneDrive, già ordinati per anno e branca.
+              Basta scontrini sparsi. Fotografali o caricali qui: l’app li archivia nel cloud di gruppo, già ordinati
+              per anno e branca.
             </p>
           </div>
 
@@ -186,7 +187,8 @@
               </li>
             </ol>
             <small
-              >L’app installata ha un archivio separato da Safari, che lo cancella dopo 7 giorni di inutilizzo.</small
+              >Da Safari, dopo 7 giorni senza usarla, perderesti la configurazione e gli scontrini non ancora
+              caricati.</small
             >
           </div>
 
@@ -197,15 +199,21 @@
                 <h2>Collega la cartella</h2>
               </div>
               <div class="step-body">
-                <p class="muted">
-                  Incolla il link della cartella <b>scontrini</b> che ti è stato condiviso (con permesso di modifica),
-                  poi accedi con l’account Microsoft con cui te l’hanno condivisa.
-                </p>
                 <div id="setup-config-error" class="callout danger" hidden>
                   App non ancora configurata: manca il Client ID Microsoft (variabile
                   <code>VITE_MS_CLIENT_ID</code>, vedi il README).
                 </div>
-                <label class="field">
+                <p class="muted">
+                  <span id="setup-intro-invite" hidden
+                    >La cartella è già pronta. Tocca <b>Accedi</b>: si aprirà una pagina Microsoft dove fare il login
+                    con la tua email personale, anche Gmail.</span
+                  >
+                  <span id="setup-intro-manual"
+                    >Incolla il link della cartella di archiviazione che hai ricevuto, poi tocca <b>Accedi</b>: si
+                    aprirà una pagina Microsoft dove fare il login con la tua email personale, anche Gmail.</span
+                  >
+                </p>
+                <label class="field" id="setup-share-field">
                   <span class="label">Link della cartella condivisa</span>
                   <span class="input-row">
                     <input
@@ -227,9 +235,10 @@
                     </button>
                   </span>
                 </label>
-                <button class="btn primary" id="btn-link-share" type="button">Collega cartella</button>
+                <button class="btn primary" id="btn-link-share" type="button">Accedi</button>
                 <div class="callout" id="setup-account-hint" hidden></div>
-                <details class="disclosure">
+                <button class="link step-more" id="btn-other-link" type="button" hidden>Usa un altro link</button>
+                <details class="disclosure" id="setup-own">
                   <summary>La cartella è nel mio OneDrive</summary>
                   <label class="field">
                     <span class="label">Percorso nel tuo OneDrive</span>
@@ -254,7 +263,7 @@
                 <label class="field">
                   <span class="label">Il tuo nome</span>
                   <input id="setup-name" type="text" autocomplete="name" placeholder="Nome e cognome" />
-                  <small class="hint">Viene salvato nei metadati di ogni scontrino caricato.</small>
+                  <small class="hint">Serve a segnare chi ha caricato ogni scontrino.</small>
                 </label>
                 <div class="field">
                   <span class="label">La tua branca quest’anno</span>

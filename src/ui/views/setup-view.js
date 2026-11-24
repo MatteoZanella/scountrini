@@ -1,5 +1,6 @@
 // First-run setup: folder link → sign in through the folder's organization →
-// name and branca. The link decides which Microsoft sign-in is needed.
+// name and branca. The link decides which Microsoft sign-in is needed. Opened
+// from an invite, the link is already known: the field is hidden.
 
 import { CONFIG } from '../../config.js';
 import { settings } from '../../core/settings.js';
@@ -39,7 +40,18 @@ const els = {
   btnSwitch: $('#btn-setup-switch'),
   btnPaste: $('#btn-paste-share'),
   accountHint: $('#setup-account-hint'),
+  introInvite: $('#setup-intro-invite'),
+  introManual: $('#setup-intro-manual'),
+  shareField: $('#setup-share-field'),
+  btnOtherLink: $('#btn-other-link'),
+  own: $('#setup-own'),
 };
+
+/** The user chose to type another link instead of the invite's. */
+let manualEntry = false;
+
+/** Opened from an invite whose folder is still to connect. */
+const fromInvite = () => !destination.get() && !manualEntry && isValidShareUrl(pendingLink.get());
 
 let onComplete = () => {};
 
@@ -77,12 +89,18 @@ export function renderSetup() {
   show(els.iosPasteNote, iosBrowser && isValidShareUrl(inviteLink()));
 
   setStep(els.stepFolder, account && dest ? 'done' : 'active');
+  const invite = fromInvite();
+  show(els.introInvite, invite);
+  show(els.introManual, !invite);
+  show(els.shareField, !invite);
+  show(els.btnOtherLink, invite);
+  show(els.own, !invite);
   if (dest) doneLine(els.folderDone, `Cartella “${dest.name}”${dest.owner ? ` di ${dest.owner}` : ''}`);
   show(els.accountRow, Boolean(account));
   if (account) els.accountName.textContent = `Connesso come ${account.name} (${account.username}).`;
   if (!els.share.value) els.share.value = pendingLink.get() || dest?.shareUrl || CONFIG.defaultShareUrl || '';
   show(els.btnPaste, Boolean(navigator.clipboard?.readText));
-  show(els.accountHint, Boolean(account) && !dest);
+  show(els.accountHint, Boolean(account) && !dest && !invite);
   if (account && !dest) {
     els.accountHint.replaceChildren(
       h('span', {}, 'Non hai il link? Chiedi a chi gestisce la cartella di condividerla con '),
@@ -161,7 +179,14 @@ export function initSetup({ onDone }) {
     }
   });
 
+  els.btnOtherLink.addEventListener('click', () => {
+    manualEntry = true;
+    renderSetup();
+    els.share.focus();
+  });
+
   $('#btn-link-share').addEventListener('click', () => {
+    if (fromInvite()) return connectShare(pendingLink.get(), { interactive: true });
     const url = extractShareUrl(els.share.value);
     els.share.value = url;
     if (!isValidShareUrl(url)) {
