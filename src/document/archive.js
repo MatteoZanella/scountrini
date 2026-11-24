@@ -8,29 +8,27 @@ import { encodeFinal, makeThumbnail } from '../imaging/encode.js';
 import { embedMetadata } from '../metadata/document-metadata.js';
 import { stripJpegMetadata } from '../metadata/containers.js';
 
-export function describeComposition(pageCount, groups) {
-  if (pageCount <= 1) return 'foto singola';
-  const merged = groups.filter((g) => g.length > 1);
-  if (groups.length === 1) return `${pageCount} foto unite automaticamente`;
-  if (!merged.length) return `${pageCount} foto affiancate (nessuna parte in comune)`;
-  const mergedCount = merged.reduce((s, g) => s + g.length, 0);
-  return `${mergedCount} foto unite, ${groups.length} parti affiancate`;
+/** The archived file's bytes: the image encoded now, or the PDF already built. */
+async function encode(composite) {
+  if (composite.kind === 'pdf') return { bytes: composite.bytes, mime: 'application/pdf', ext: 'pdf' };
+  return encodeFinal(composite.canvas, CONFIG.webpQuality);
 }
 
 /**
  * @param {object} p
- * @param {HTMLCanvasElement} p.canvas   composed document
- * @param {number[][]} p.groups          stitching groups (page indices)
- * @param {number} p.pageCount
+ * @param {import('./compose.js').Composite} p.composite
+ * @param {number} p.pageCount           photos and PDF files it was made from
+ * @param {string} p.composition         see describeComposition
  * @param {{date:string, time?:string, merchant:string, branca:string, year?:string, amount?:string, notes?:string}} p.form
  * @param {{userName:string, account?:string, device:string}} p.author
  * @param {{lat:number, lon:number}|null} p.gps
  */
-export async function archiveDocument({ canvas, groups, pageCount, form, author, gps }) {
+export async function archiveDocument({ composite, pageCount, composition, form, author, gps }) {
   const id = uuid();
   const year = form.year || associativeYear(form.date);
   const createdAt = new Date();
-  const encoded = await encodeFinal(canvas, CONFIG.webpQuality);
+  const { canvas } = composite;
+  const encoded = await encode(composite);
   const fileName = buildFileName({
     date: form.date,
     time: form.time,
@@ -53,10 +51,11 @@ export async function archiveDocument({ canvas, groups, pageCount, form, author,
     device: author.device,
     gps,
     pageCount,
-    composition: describeComposition(pageCount, groups),
+    pdfPages: composite.pdfPages,
+    composition,
     createdAt,
   };
-  const blob = embedMetadata(encoded, { width: canvas.width, height: canvas.height }, info);
+  const blob = await embedMetadata(encoded, { width: canvas.width, height: canvas.height }, info);
 
   const job = {
     id,
@@ -64,11 +63,11 @@ export async function archiveDocument({ canvas, groups, pageCount, form, author,
     status: 'pending',
     attempts: 0,
     folders: [year, form.branca],
-    fileName, // may become name-2.webp on upload if the name is taken
+    fileName, // may become name-2.webp (or .pdf) on upload if the name is taken
     mime: encoded.mime,
     blob,
     size: blob.size,
-    thumb: await makeThumbnail(canvas, 240),
+    thumb: await makeThumbnail(composite.cover || canvas, 240),
     date: form.date,
     merchant: form.merchant.trim(),
     branca: form.branca,
@@ -111,7 +110,7 @@ export async function resolveNameConflict(job, choice, changes = {}) {
   meta.year = year;
   let bytes = new Uint8Array(await job.blob.arrayBuffer());
   if (job.mime === 'image/jpeg') bytes = stripJpegMetadata(bytes); // the WebP muxer replaces metadata by itself
-  const blob = embedMetadata({ bytes, mime: job.mime }, { width: job.width, height: job.height }, meta);
+  const blob = await embedMetadata({ bytes, mime: job.mime }, { width: job.width, height: job.height }, meta);
   return jobs.update(job.id, {
     status: 'pending',
     blob,

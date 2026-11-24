@@ -1,9 +1,10 @@
 // Extra ways to bring photos in besides camera and gallery: the clipboard
-// (button, Ctrl/⌘+V) and drag and drop of image files onto the window.
+// (button, Ctrl/⌘+V) and drag and drop of image or PDF files onto the window.
 
 import { h, icon } from './dom.js';
+import { isPdfFile } from '../pdf/read.js';
 
-const isImage = (f) => f && f.type.startsWith('image/');
+const isAccepted = (f) => f && (f.type.startsWith('image/') || isPdfFile(f));
 const isEditable = (el) =>
   el instanceof HTMLElement && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
 
@@ -26,18 +27,18 @@ export async function readClipboardImages() {
   return files;
 }
 
-const imageFiles = (dataTransfer) => [...(dataTransfer?.files || [])].filter(isImage);
+const acceptedFiles = (dataTransfer) => [...(dataTransfer?.files || [])].filter(isAccepted);
 const carriesFiles = (e) => [...(e.dataTransfer?.types || [])].includes('Files');
 
 /**
  * Wires paste and drag-and-drop. `isActive()` decides whether photos are
  * accepted right now (e.g. only on the "Nuovo" view with no dialog open);
- * `onFiles(files, origin)` receives the images ('clipboard' or 'gallery' for dropped files).
+ * `onFiles(files, origin)` receives images and PDFs ('clipboard' or 'gallery' for dropped files).
  */
 export function initPhotoIntake({ isActive, onFiles }) {
   document.addEventListener('paste', (e) => {
     if (!isActive() || isEditable(e.target)) return;
-    const files = imageFiles(e.clipboardData);
+    const files = acceptedFiles(e.clipboardData);
     if (!files.length) return;
     e.preventDefault();
     onFiles(files, 'clipboard');
@@ -46,7 +47,7 @@ export function initPhotoIntake({ isActive, onFiles }) {
   const overlay = h(
     'div.drop-overlay',
     { hidden: true, 'aria-hidden': 'true' },
-    h('div', {}, icon('image'), h('span', {}, 'Rilascia per aggiungere la foto')),
+    h('div', {}, icon('image'), h('span', {}, 'Rilascia per aggiungere')),
   );
   document.body.append(overlay);
   let depth = 0; // dragenter/leave fire for every child element
@@ -73,7 +74,7 @@ export function initPhotoIntake({ isActive, onFiles }) {
     e.preventDefault(); // never let the browser navigate to the file
     hide();
     if (!isActive()) return;
-    const files = imageFiles(e.dataTransfer);
+    const files = acceptedFiles(e.dataTransfer);
     if (files.length) onFiles(files, 'gallery');
   });
 }

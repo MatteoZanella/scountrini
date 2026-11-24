@@ -4,11 +4,18 @@
 
 import { parseISODate } from '../core/dates.js';
 import { resolveNameConflict } from '../document/archive.js';
+import { pdfToImage } from '../pdf/read.js';
 import { $, h, icon, openDialog, toast } from './dom.js';
 
 function figure(blob, caption, link) {
-  const url = URL.createObjectURL(blob);
-  const img = h('img', { src: url, alt: caption, onload: () => URL.revokeObjectURL(url) });
+  const img = h('img', { alt: caption });
+  const showBlob = (b) => {
+    const url = URL.createObjectURL(b);
+    img.onload = () => URL.revokeObjectURL(url);
+    img.src = url;
+  };
+  if (blob.type === 'application/pdf') pdfToImage(blob, 720).then(showBlob, (e) => console.warn(e));
+  else showBlob(blob);
   return h('figure.conflict-image', {}, img, h('figcaption', {}, caption, link ? [' · ', link] : null));
 }
 
@@ -42,7 +49,7 @@ export async function showNameConflict(job) {
     h(
       'p',
       {},
-      'Su OneDrive c’è già un file con lo stesso nome (stessa data, ora ed esercente), ma l’immagine è diversa. È lo stesso scontrino?',
+      'Su OneDrive c’è già un file con lo stesso nome (stessa data, ora ed esercente), ma il contenuto è diverso. È lo stesso scontrino?',
     ),
     h(
       'div.conflict-images',

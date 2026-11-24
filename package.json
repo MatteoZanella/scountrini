@@ -18,12 +18,14 @@
   },
   "dependencies": {
     "@azure/msal-browser": "^4.30.0",
+    "@cantoo/pdf-lib": "2.11.1",
     "@jsquash/webp": "1.5.0",
     "@techstark/opencv-js": "4.10.0-release.1",
     "@tesseract.js-data/ita": "^1.0.0",
     "autocompleter": "10.1.0",
     "fuse.js": "7.5.0",
     "jscanify": "1.4.2",
+    "pdfjs-dist": "6.5.438",
     "tesseract.js": "6.0.1"
   },
   "devDependencies": {

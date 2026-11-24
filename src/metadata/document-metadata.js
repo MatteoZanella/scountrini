@@ -1,5 +1,5 @@
 // Builds the (Italian) metadata embedded in every archived document and
-// writes it into the encoded image.
+// writes it into the file: EXIF + XMP for images, Info + XMP for PDFs.
 
 import { CONFIG } from '../config.js';
 import { formatDateIT, toExifDate, toExifOffset, toLocalISOString, parseISODate } from '../core/dates.js';
@@ -7,6 +7,7 @@ import { brancaLabel } from '../core/branche.js';
 import { buildExif } from './exif.js';
 import { buildXmp } from './xmp.js';
 import { muxJpeg, muxWebp } from './containers.js';
+import { writePdfMetadata } from '../pdf/write.js';
 
 /**
  * @typedef {object} DocumentInfo
@@ -22,7 +23,8 @@ import { muxJpeg, muxWebp } from './containers.js';
  * @property {{lat:number, lon:number}|null} [gps]
  * @property {string} [amount]      "12,34"
  * @property {string} [notes]
- * @property {number} pageCount
+ * @property {number} pageCount     photos and PDF files it was made from
+ * @property {number} [pdfPages]    pages of the archived PDF (PDF documents only)
  * @property {string} composition   human readable, e.g. "3 foto unite automaticamente"
  * @property {Date}   createdAt
  */
@@ -91,27 +93,40 @@ function buildMetadata(d) {
       Dispositivo: d.device,
       DataAcquisizione: toLocalISOString(d.createdAt),
       Posizione: d.gps ? `${d.gps.lat.toFixed(6)}, ${d.gps.lon.toFixed(6)}` : 'non disponibile',
-      NumeroFoto: String(d.pageCount),
+      NumeroFoto: d.pdfPages ? '' : String(d.pageCount), // empty values are left out
+      NumeroPagine: d.pdfPages ? String(d.pdfPages) : '',
       Composizione: d.composition,
       Note: d.notes || '',
       IdDocumento: d.id,
       Applicazione: software,
     },
   });
-  return { exif, xmp };
+  return { exif, xmp, title, description, keywords, software };
 }
 
 /**
  * @param {{bytes: Uint8Array, mime: string}} encoded
- * @param {{width:number, height:number}} size
+ * @param {{width:number, height:number}} size  pixels (images only)
  * @param {DocumentInfo} info
- * @returns {Blob}
+ * @returns {Promise<Blob>}
  */
-export function embedMetadata(encoded, size, info) {
-  const { exif, xmp } = buildMetadata(info);
-  const bytes =
-    encoded.mime === 'image/webp'
-      ? muxWebp(encoded.bytes, { width: size.width, height: size.height, exif, xmp })
-      : muxJpeg(encoded.bytes, { exif, xmp });
+export async function embedMetadata(encoded, size, info) {
+  const m = buildMetadata(info);
+  let bytes;
+  if (encoded.mime === 'application/pdf') {
+    bytes = await writePdfMetadata(encoded.bytes, {
+      title: m.title,
+      subject: m.description,
+      author: info.userName,
+      keywords: [m.keywords.join('; ')], // pdf-lib joins with spaces: names have spaces too
+      software: m.software,
+      createdAt: info.createdAt,
+      xmp: m.xmp,
+    });
+  } else if (encoded.mime === 'image/webp') {
+    bytes = muxWebp(encoded.bytes, { width: size.width, height: size.height, exif: m.exif, xmp: m.xmp });
+  } else {
+    bytes = muxJpeg(encoded.bytes, { exif: m.exif, xmp: m.xmp });
+  }
   return new Blob([bytes], { type: encoded.mime });
 }

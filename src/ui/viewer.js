@@ -3,7 +3,8 @@
 // double click or Ctrl+wheel zoom the image only: the page itself never zooms
 // (touch-action on the body), so the header stays put.
 
-import { $, show, objectUrlSlot, closeOnBack } from './dom.js';
+import { $, show, objectUrlSlot, closeOnBack, toast } from './dom.js';
+import { pdfToImage } from '../pdf/read.js';
 
 const root = $('#viewer');
 const img = $('#viewer-img');
@@ -106,10 +107,21 @@ function close() {
 $('#viewer-close').addEventListener('click', close);
 addEventListener('keydown', (e) => e.key === 'Escape' && close());
 
-export function openViewer(blob, title = 'Anteprima') {
+/** Shows an image, or a PDF with its pages one under the other. */
+export async function openViewer(blob, title = 'Anteprima') {
   $('#viewer-title').textContent = title;
   show(root, true);
   document.body.classList.add('modal-open');
-  img.src = url.set(blob); // sized on load, now that the body has its size
   releaseBack ||= closeOnBack(close);
+  const opened = releaseBack;
+  if (blob.type === 'application/pdf') {
+    try {
+      blob = await pdfToImage(blob);
+    } catch (e) {
+      toast(e.message, { type: 'error' });
+      return close();
+    }
+    if (releaseBack !== opened) return; // closed while rendering
+  }
+  img.src = url.set(blob); // sized on load, now that the body has its size
 }

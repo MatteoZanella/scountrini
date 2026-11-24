@@ -1,5 +1,6 @@
-// "Nuovo" view: collects the photos of one document, shows the composed
-// result, proposes fields via OCR and queues the archived file for upload.
+// "Nuovo" view: collects the photos and PDFs of one document, shows the
+// composed result, proposes fields via OCR (or the PDF's own text) and queues
+// the archived file for upload.
 // The whole draft is persisted, so nothing is lost if the OS kills the page
 // while the camera app is open.
 
@@ -13,9 +14,10 @@ import { draft } from '../../storage/db.js';
 import { getAccount } from '../../cloud/auth.js';
 import { destination } from '../../cloud/destination.js';
 import { uploadQueue } from '../../cloud/upload-queue.js';
-import { importPhoto, getProcessedCanvas, forgetPage, clearPageCache } from '../../document/pages.js';
-import { archiveDocument, describeComposition } from '../../document/archive.js';
-import { composeDocument } from '../../imaging/stitch.js';
+import { importPhoto, importPdf, isPdfPage, getOcrCanvas, forgetPage, clearPageCache } from '../../document/pages.js';
+import { composePages, describeComposition } from '../../document/compose.js';
+import { archiveDocument } from '../../document/archive.js';
+import { isPdfFile } from '../../pdf/read.js';
 import { canvasToBlob, scaleCanvas } from '../../imaging/canvas.js';
 import { loadOpenCV } from '../../imaging/opencv.js';
 import { recognize } from '../../ocr/tesseract.js';
@@ -70,7 +72,7 @@ const state = {
   form: freshForm(),
   gps: null,
   suggestions: {},
-  composite: null, // { canvas, groups, version }
+  composite: null, // see document/compose.js, plus { version }
   composing: null, // Promise of the running composition
   version: 0,
 };
@@ -81,24 +83,16 @@ const thumbUrls = new Map(); // page id → object URL
 // --------------------------------------------------------------------------
 // Persistence
 // --------------------------------------------------------------------------
+// Page fields kept in the draft (see the Page typedef in document/pages.js)
+const DRAFT_FIELDS = [
+  ...['id', 'kind', 'source', 'thumb', 'origin', 'exif', 'ocrText', 'ocrHeights'],
+  ...['rotation', 'corners', 'intensity', 'mode', 'processed'], // photos
+  ...['pdfPages', 'name'], // PDFs
+];
+
 const persist = debounce(() => {
   if (!state.pages.length) return draft.clear().catch(() => {});
-  const pages = state.pages.map(
-    ({ id, source, rotation, corners, intensity, mode, processed, thumb, origin, exif, ocrText, ocrHeights }) => ({
-      id,
-      source,
-      rotation,
-      corners,
-      intensity,
-      mode,
-      processed,
-      thumb,
-      origin,
-      exif,
-      ocrText,
-      ocrHeights,
-    }),
-  );
+  const pages = state.pages.map((p) => Object.fromEntries(DRAFT_FIELDS.map((k) => [k, p[k]])));
   draft
     .save({ pages, form: state.form, gps: state.gps, savedAt: Date.now() })
     .catch((e) => console.warn('Draft not saved', e));
@@ -140,15 +134,17 @@ function dropThumb(id) {
 function renderPages() {
   const n = state.pages.length;
   els.pageCount.textContent = n ? `(${n})` : '';
-  const tiles = state.pages.map((p, i) =>
-    h(
+  const tiles = state.pages.map((p, i) => {
+    const pdf = isPdfPage(p);
+    return h(
       'div.page',
       {},
       h(
         'button.page-thumb',
-        { type: 'button', 'aria-label': `Modifica foto ${i + 1}`, onclick: () => editPage(i) },
+        { type: 'button', 'aria-label': pdf ? `Apri ${p.name}` : `Modifica foto ${i + 1}`, onclick: () => editPage(i) },
         h('img', { src: thumbUrl(p), alt: '' }),
         h('span.page-num', {}, String(i + 1)),
+        pdf ? h('span.page-badge', {}, `PDF · ${p.pdfPages} pag.`) : null,
       ),
       h(
         'div.page-tools',
@@ -158,11 +154,13 @@ function renderPages() {
           { type: 'button', 'aria-label': 'Sposta a sinistra', disabled: i === 0, onclick: () => movePage(i, -1) },
           icon('left'),
         ),
-        h('button', { type: 'button', 'aria-label': 'Modifica', onclick: () => editPage(i) }, icon('edit')),
+        pdf
+          ? h('button', { type: 'button', 'aria-label': 'Apri', onclick: () => editPage(i) }, icon('eye'))
+          : h('button', { type: 'button', 'aria-label': 'Modifica', onclick: () => editPage(i) }, icon('edit')),
         h('button', { type: 'button', 'aria-label': 'Elimina', onclick: () => removePage(i) }, icon('trash')),
       ),
-    ),
-  );
+    );
+  });
   const canAdd = n < LIMITS.maxPagesPerDocument;
   const adders = canAdd
     ? [
@@ -170,7 +168,7 @@ function renderPages() {
           'button.page-add',
           { type: 'button', onclick: chooseSource },
           h('span.add-circle', {}, icon('plus')),
-          h('span', {}, 'Aggiungi foto'),
+          h('span', {}, 'Aggiungi'),
         ),
       ]
     : [];
@@ -239,11 +237,9 @@ async function runComposition() {
   const version = ++state.version;
   if (!state.pages.length) return;
   show(els.previewBusy, true);
-  els.previewBusyText.textContent = state.pages.length > 1 ? 'Unione delle foto…' : 'Anteprima…';
+  els.previewBusyText.textContent = state.pages.length > 1 ? 'Unione delle pagine…' : 'Anteprima…';
   try {
-    const canvases = [];
-    for (const p of state.pages) canvases.push(await getProcessedCanvas(p));
-    const result = await composeDocument(canvases, (msg) => (els.previewBusyText.textContent = msg));
+    const result = await composePages(state.pages, (msg) => (els.previewBusyText.textContent = msg));
     if (version !== state.version) return;
     state.composite = { ...result, version };
     const preview = await canvasToBlob(scaleCanvas(result.canvas, 1600), 'image/jpeg', 0.85);
@@ -257,10 +253,9 @@ async function runComposition() {
   }
 }
 
-function composeMessage({ groups }) {
-  const n = state.pages.length;
-  if (n === 1) return 'Tocca l’anteprima per ingrandirla.';
-  const text = describeComposition(n, groups);
+function composeMessage(composite) {
+  if (state.pages.length === 1 && composite.kind === 'image') return 'Tocca l’anteprima per ingrandirla.';
+  const text = describeComposition(state.pages, composite);
   return text.charAt(0).toUpperCase() + text.slice(1) + '.';
 }
 
@@ -279,7 +274,7 @@ async function ensureComposite() {
 async function runOcr(page) {
   if (!settings.get('autoOcr') || page.ocrText != null) return;
   try {
-    const { text, heights } = await recognize(await getProcessedCanvas(page));
+    const { text, heights } = await recognize(await getOcrCanvas(page));
     const target = state.pages.find((p) => p.id === page.id);
     if (!target) return;
     target.ocrText = text;
@@ -318,7 +313,7 @@ function applySuggestions() {
 // --------------------------------------------------------------------------
 async function pick(kind) {
   if (state.pages.length >= LIMITS.maxPagesPerDocument) {
-    toast(`Massimo ${LIMITS.maxPagesPerDocument} foto per documento`, { type: 'warn' });
+    toast(`Massimo ${LIMITS.maxPagesPerDocument} foto o PDF per documento`, { type: 'warn' });
     return;
   }
   // Desktop browsers ignore `capture`: there the webcam stands in
@@ -362,14 +357,14 @@ async function chooseSource() {
     row('files', 'folder', files),
     canReadClipboardImages() && row('paste', 'paste', 'Incolla'),
   );
-  const choice = await openDialog({ title: 'Aggiungi una foto', body, ok: null });
+  const choice = await openDialog({ title: 'Aggiungi foto o PDF', body, ok: null });
   if (choice === 'paste') pasteFromClipboard();
   else if (choice === 'camera' || choice === 'gallery' || choice === 'files') pick(choice);
 }
 
 async function pasteFromClipboard() {
   if (state.pages.length >= LIMITS.maxPagesPerDocument) {
-    toast(`Massimo ${LIMITS.maxPagesPerDocument} foto per documento`, { type: 'warn' });
+    toast(`Massimo ${LIMITS.maxPagesPerDocument} foto o PDF per documento`, { type: 'warn' });
     return;
   }
   let files;
@@ -423,17 +418,17 @@ function defaultDateFromPhoto(page) {
 
 let importing = false;
 
+const isImageFile = (f) => f.type.startsWith('image/') || /\.(jpe?g|png|webp|heic|heif|avif)$/i.test(f.name || '');
+
 async function addPhotos(files, origin) {
   const picked = [...files];
   // The "File" input has no accept (so the file manager lists everything)
-  const images = picked.filter(
-    (f) => f.type.startsWith('image/') || /\.(jpe?g|png|webp|heic|heif|avif)$/i.test(f.name || ''),
-  );
-  if (picked.length && !images.length) {
-    toast('Scegli un’immagine: JPG, PNG, WebP o HEIC', { type: 'warn' });
+  const accepted = picked.filter((f) => isImageFile(f) || isPdfFile(f));
+  if (picked.length && !accepted.length) {
+    toast('Scegli una foto (JPG, PNG, WebP, HEIC) o un PDF', { type: 'warn' });
     return;
   }
-  const list = images.slice(0, LIMITS.maxPagesPerDocument - state.pages.length);
+  const list = accepted.slice(0, LIMITS.maxPagesPerDocument - state.pages.length);
   if (!list.length || importing) return;
   importing = true;
   try {
@@ -443,9 +438,34 @@ async function addPhotos(files, origin) {
   }
 }
 
+function addPage(page) {
+  state.pages.push(page);
+  defaultDateFromPhoto(page);
+  persist();
+  renderAll();
+  recompose();
+  if (page.ocrText)
+    applySuggestions(); // a digital PDF brings its own text
+  else runOcr(page);
+}
+
+/** A PDF skips the scanner: it is already a clean document. */
+async function addPdf(file, origin) {
+  try {
+    addPage(await withBusy('Apro il PDF…', () => importPdf(file, origin)));
+  } catch (e) {
+    console.error(e);
+    toast(e.message || 'PDF non leggibile', { type: 'error' });
+  }
+}
+
 async function importPhotos(list, origin) {
   if (origin === 'camera') requestPosition();
   for (const [i, file] of list.entries()) {
+    if (isPdfFile(file)) {
+      await addPdf(file, origin);
+      continue;
+    }
     let imported;
     try {
       imported = await withBusy(i === 0 ? 'Preparo lo scanner…' : 'Carico la foto…', async (msg) => {
@@ -460,7 +480,7 @@ async function importPhotos(list, origin) {
     }
     // Same colour mode as the previous photo (the auto intensity already
     // evens out their contrast), or the stitching seam would show
-    const prev = state.pages.at(-1);
+    const prev = state.pages.findLast((p) => !isPdfPage(p));
     if (prev) imported.page.mode = prev.mode;
     const subtitle = list.length > 1 ? `Foto ${i + 1} di ${list.length}` : `Foto ${state.pages.length + 1}`;
     const page = await openScanner(imported.page, { subtitle, detected: imported.detected });
@@ -468,17 +488,13 @@ async function importPhotos(list, origin) {
       forgetPage(imported.page.id);
       continue;
     }
-    state.pages.push(page);
-    defaultDateFromPhoto(page);
-    persist();
-    renderAll();
-    recompose();
-    runOcr(page);
+    addPage(page);
   }
 }
 
 async function editPage(i) {
   const old = state.pages[i];
+  if (isPdfPage(old)) return openViewer(old.source, old.name);
   const page = await openScanner(old, { subtitle: `Foto ${i + 1}` });
   if (!page) return;
   dropThumb(old.id);
@@ -499,7 +515,8 @@ function movePage(i, delta) {
 }
 
 async function removePage(i) {
-  const ok = await confirmDialog({ title: 'Eliminare questa foto?', ok: 'Elimina', danger: true });
+  const what = isPdfPage(state.pages[i]) ? 'questo PDF' : 'questa foto';
+  const ok = await confirmDialog({ title: `Eliminare ${what}?`, ok: 'Elimina', danger: true });
   if (!ok) return;
   const [p] = state.pages.splice(i, 1);
   dropThumb(p.id);
@@ -563,9 +580,9 @@ async function save() {
       msg('Salvo sul telefono…');
       const account = getAccount();
       return archiveDocument({
-        canvas: composite.canvas,
-        groups: composite.groups,
+        composite,
         pageCount: state.pages.length,
+        composition: describeComposition(state.pages, composite),
         form: { ...f, year: currentYear(), amount: f.amount ? normalizeAmount(f.amount) : '' },
         author: {
           userName: settings.get('userName') || account?.name || 'Sconosciuto',
@@ -597,6 +614,8 @@ async function save() {
 // --------------------------------------------------------------------------
 export function initComposer() {
   const { camera, gallery, files } = photoSources();
+  // Chrome on Android opens its photo picker only for images: PDFs go through "File"
+  if (!isAndroid() || isFirefoxAndroid()) els.gallery.accept = 'image/*,application/pdf';
   show($('[data-act="camera"]'), Boolean(camera));
   $('[data-act="gallery"]').classList.toggle('primary', !camera);
   $('[data-act="gallery"] span').textContent = gallery;
@@ -654,7 +673,7 @@ export function initComposer() {
   $('#btn-discard').addEventListener('click', async () => {
     const ok = await confirmDialog({
       title: 'Annullare il documento?',
-      body: 'Le foto di questo documento verranno scartate.',
+      body: 'Le foto e i PDF di questo documento verranno scartati.',
       ok: 'Annulla documento',
       cancel: 'Continua',
       danger: true,

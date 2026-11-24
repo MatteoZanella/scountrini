@@ -1,4 +1,5 @@
-// A "page" is one photo of a document, with the user's crop/enhance choices.
+// A "page" is one piece of a document: a photo with the user's crop/enhance
+// choices (kind 'image'), or a whole PDF file kept as it is (kind 'pdf').
 // Persisted fields are plain data + Blobs (IndexedDB friendly); decoded
 // canvases are kept in an in-memory cache keyed by page id.
 
@@ -9,22 +10,28 @@ import { warpDocument } from '../imaging/perspective.js';
 import { enhance } from '../imaging/enhance.js';
 import { encodeIntermediate, makeThumbnail } from '../imaging/encode.js';
 import { readJpegExif } from '../metadata/exif.js';
+import { readText, renderPage as renderPdfPage, withPdf } from '../pdf/read.js';
 
 /**
  * @typedef {object} Page
  * @property {string} id
- * @property {Blob} source        decoded, orientation-normalized photo (JPEG)
- * @property {number} rotation    quarter turns applied to `source`
- * @property {{x:number,y:number}[]} corners  in rotated-source coordinates
- * @property {number} intensity
- * @property {'color'|'gray'} mode
- * @property {Blob} processed     cropped + enhanced result
+ * @property {'image'|'pdf'} [kind]  missing in drafts saved before PDFs: 'image'
+ * @property {Blob} source        image: decoded, orientation-normalized photo (JPEG); pdf: the file
+ * @property {number} [rotation]  quarter turns applied to `source` (image)
+ * @property {{x:number,y:number}[]} [corners]  in rotated-source coordinates (image)
+ * @property {number} [intensity] (image)
+ * @property {'color'|'gray'} [mode] (image)
+ * @property {Blob} [processed]   cropped + enhanced result (image)
+ * @property {number} [pdfPages]  number of pages (pdf)
+ * @property {string} [name]      file name (pdf)
  * @property {Blob} thumb
- * @property {'camera'|'gallery'|'clipboard'} origin
+ * @property {'camera'|'gallery'|'clipboard'|'files'} origin
  * @property {{date: Date|null, gps: {lat:number,lon:number}|null}} exif
  * @property {string|null} ocrText
  * @property {Record<string, number>|null} [ocrHeights]  line text → height (px)
  */
+
+export const isPdfPage = (page) => page.kind === 'pdf';
 
 const canvasCache = new Map(); // id → { source?: canvas, processed?: canvas }
 
@@ -54,6 +61,7 @@ export async function importPhoto(file, origin) {
   const source = await canvasToBlob(canvas, 'image/jpeg', 0.92);
   const draft = {
     id: uuid(),
+    kind: 'image',
     source,
     rotation: 0,
     corners,
@@ -87,4 +95,32 @@ export async function renderPage(page, warped = null) {
   cacheEntry(page.id).processed = processed;
   const [blob, thumb] = await Promise.all([encodeIntermediate(processed), makeThumbnail(processed, 720)]);
   return { ...page, processed: blob, thumb };
+}
+
+/**
+ * A PDF goes in as it is: no crop or enhancement. Its text layer stands in
+ * for OCR (`ocrText` stays null for scanned PDFs, which are OCR'd instead).
+ */
+export function importPdf(file, origin) {
+  return withPdf(file, async (doc) => {
+    const [cover, { text, heights }] = await Promise.all([renderPdfPage(doc, 1, 720), readText(doc)]);
+    return {
+      id: uuid(),
+      kind: 'pdf',
+      source: new Blob([file], { type: 'application/pdf' }),
+      name: file.name || 'documento.pdf',
+      pdfPages: doc.numPages,
+      thumb: await makeThumbnail(cover, 720),
+      origin,
+      exif: { date: null, gps: null },
+      ocrText: text.trim() ? text : null,
+      ocrHeights: text.trim() ? heights : null,
+    };
+  });
+}
+
+/** What OCR reads: the processed photo, or the first page of a scanned PDF. */
+export async function getOcrCanvas(page) {
+  if (!isPdfPage(page)) return getProcessedCanvas(page);
+  return withPdf(page.source, (doc) => renderPdfPage(doc, 1, 1600));
 }

@@ -456,13 +456,14 @@ function montage(groupCanvases) {
 }
 
 /**
- * Composes the pages into a single image.
- * @returns {Promise<{canvas, groups:number[][], merged:number}>}
+ * Composes the pages into a single image. `parts` are the joined groups on
+ * their own (one per PDF page when the document becomes a PDF).
+ * @returns {Promise<{canvas, parts: HTMLCanvasElement[], groups:number[][], merged:number}>}
  */
 export async function composeDocument(canvases, onProgress = () => {}) {
   if (!canvases.length) throw new Error('Nessuna immagine');
   if (canvases.length === 1) {
-    return { canvas: montage([canvases[0]]), groups: [[0]], merged: 0 };
+    return { canvas: montage([canvases[0]]), parts: [canvases[0]], groups: [[0]], merged: 0 };
   }
   const cv = await loadOpenCV();
   const n = canvases.length;
@@ -528,5 +529,5 @@ export async function composeDocument(canvases, onProgress = () => {}) {
     await nextFrame();
   }
   const merged = groups.filter((g) => g.length > 1).reduce((s, g) => s + g.length, 0);
-  return { canvas: montage(groupCanvases), groups, merged };
+  return { canvas: montage(groupCanvases), parts: groupCanvases, groups, merged };
 }

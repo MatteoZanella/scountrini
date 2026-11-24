@@ -16,6 +16,11 @@ const VENDOR = [
   // Only the LSTM cores are needed (OEM 1); the SIMD one is picked when supported
   ['node_modules/tesseract.js-core/tesseract-core{,-simd}-lstm.wasm.js', 'vendor/tesseract/core'],
   ['node_modules/@tesseract.js-data/ita/4.0.0_best_int/ita.traineddata.gz', 'vendor/tesseract/lang'],
+  // pdf.js: worker, fonts PDFs may use without embedding them, image decoders and colour profiles
+  ['node_modules/pdfjs-dist/build/pdf.worker.min.mjs', 'vendor/pdfjs'],
+  ['node_modules/pdfjs-dist/standard_fonts/*', 'vendor/pdfjs/standard_fonts'],
+  ['node_modules/pdfjs-dist/wasm/{openjpeg,jbig2,qcms_bg}.wasm', 'vendor/pdfjs/wasm'],
+  ['node_modules/pdfjs-dist/iccs/*', 'vendor/pdfjs/iccs'],
 ];
 
 export default defineConfig({
@@ -56,8 +61,9 @@ export default defineConfig({
       },
       injectManifest: {
         // Everything the app needs offline, except the Tesseract cores (large,
-        // and each device needs only one): those are cached at first use.
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,gz,wasm}'],
+        // and each device needs only one) and the pdf.js fonts (only some PDFs
+        // need one): those are cached at first use.
+        globPatterns: ['**/*.{js,mjs,css,html,ico,png,svg,gz,wasm}'],
         globIgnores: ['**/vendor/tesseract/core/**'],
         maximumFileSizeToCacheInBytes: 20 * 1024 * 1024,
       },
