@@ -15,7 +15,7 @@ import { registerServiceWorker } from './pwa.js';
 import { applyTheme } from './ui/theme.js';
 import { $, $$, show, toast } from './ui/dom.js';
 import { initStatus, refreshStatus } from './ui/status.js';
-import { initSetup, renderSetup, isSetupComplete, autoLinkPendingInvite } from './ui/views/setup-view.js';
+import { initSetup, renderSetup, isSetupComplete, resumeSetup } from './ui/views/setup-view.js';
 import { initComposer, refreshComposer } from './ui/views/composer-view.js';
 import { initLog, render as renderLog } from './ui/views/log-view.js';
 import { initSettings, renderSettings } from './ui/views/settings-view.js';
@@ -113,7 +113,7 @@ async function main() {
     if (b) showView(b.dataset.view);
   });
 
-  await autoLinkPendingInvite();
+  await resumeSetup();
   // First paint: the section in the URL (reload), keeping its history entry
   const first = isSetupComplete() ? viewFromUrl() || HOME : 'setup';
   history.replaceState(

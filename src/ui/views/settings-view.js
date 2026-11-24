@@ -148,7 +148,7 @@ export function initSettings({ onChangeFolder }) {
     if (address) copyText(address, { title: 'Il tuo indirizzo', success: 'Indirizzo copiato' });
   });
   // Pending uploads stay in the queue and go out with the new account
-  $('#btn-switch-account').addEventListener('click', () => login());
+  $('#btn-switch-account').addEventListener('click', () => login({ tenantId: destination.get()?.tenantId }));
   $('#btn-change-folder').addEventListener('click', async () => {
     const ok = await confirmDialog({
       title: 'Cambiare cartella?',

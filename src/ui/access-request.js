@@ -3,7 +3,8 @@
 // access" page (opened from the sharing link), which notifies the owner, who
 // approves it from OneDrive. Microsoft offers no API to submit it for the user.
 
-import { getAccount, login } from '../cloud/auth.js';
+import { getAccount } from '../cloud/auth.js';
+import { signInForFolder } from '../cloud/destination.js';
 import { h, icon, confirmDialog } from './dom.js';
 
 /** Opens the access-request dialog for the shared folder `shareUrl`. */
@@ -44,7 +45,7 @@ export async function showAccessRequest({ shareUrl } = {}) {
       {},
       'Su OneDrive accedi con lo stesso indirizzo: se lì risulti con un altro account, la richiesta parte da quello. ',
       'La cartella è condivisa con un altro tuo account? ',
-      h('button.link', { type: 'button', onclick: () => login() }, 'Cambia account'),
+      h('button.link', { type: 'button', onclick: () => signInForFolder(shareUrl) }, 'Cambia account'),
     ),
   );
   await confirmDialog({ title: 'Non hai accesso a questa cartella', body, ok: 'Chiudi', cancel: null });

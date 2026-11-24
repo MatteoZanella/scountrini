@@ -182,9 +182,7 @@
               </li>
               <li>Tocca <b>Condividi</b> (o menu <b>⋯</b> → Condividi) → <b>Aggiungi alla schermata Home</b>.</li>
               <li>
-                Apri l’app dall’icona nella Home e accedi lì<span id="setup-ios-paste-note" hidden
-                  >, poi incolla il link al passo 2</span
-                >.
+                Apri l’app dall’icona nella Home<span id="setup-ios-paste-note" hidden> e incolla lì il link</span>.
               </li>
             </ol>
             <small
@@ -193,37 +191,20 @@
           </div>
 
           <ol class="steps">
-            <li class="step" id="step-login">
+            <li class="step" id="step-folder">
               <div class="step-head">
                 <span class="step-num">1</span>
-                <h2>Accedi con Microsoft</h2>
+                <h2>Collega la cartella</h2>
               </div>
               <div class="step-body">
                 <p class="muted">
-                  Usa l’account Microsoft con cui ti hanno condiviso la cartella: resterai collegato su questo
-                  dispositivo.
+                  Incolla il link della cartella <b>scontrini</b> che ti è stato condiviso (con permesso di modifica),
+                  poi accedi con l’account Microsoft con cui te l’hanno condivisa.
                 </p>
                 <div id="setup-config-error" class="callout danger" hidden>
                   App non ancora configurata: manca il Client ID Microsoft (variabile
                   <code>VITE_MS_CLIENT_ID</code>, vedi il README).
                 </div>
-                <button class="btn primary" id="btn-login" type="button">Accedi con Microsoft</button>
-              </div>
-              <div class="step-done" id="login-done"></div>
-              <button class="link step-alt" id="btn-setup-switch" type="button" hidden>
-                Non sei tu? Cambia account
-              </button>
-            </li>
-
-            <li class="step" id="step-folder">
-              <div class="step-head">
-                <span class="step-num">2</span>
-                <h2>Collega la cartella</h2>
-              </div>
-              <div class="step-body">
-                <p class="muted">
-                  Incolla il link della cartella <b>scontrini</b> che ti è stato condiviso (con permesso di modifica).
-                </p>
                 <label class="field">
                   <span class="label">Link della cartella condivisa</span>
                   <span class="input-row">
@@ -258,11 +239,15 @@
                 </details>
               </div>
               <div class="step-done" id="folder-done"></div>
+              <p class="step-alt muted" id="setup-account" hidden>
+                <span id="setup-account-name"></span>
+                <button class="link" id="btn-setup-switch" type="button">Cambia account</button>
+              </p>
             </li>
 
             <li class="step" id="step-profile">
               <div class="step-head">
-                <span class="step-num">3</span>
+                <span class="step-num">2</span>
                 <h2>Chi sei</h2>
               </div>
               <div class="step-body">

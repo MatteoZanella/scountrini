@@ -1,11 +1,13 @@
-// The configured OneDrive destination folder (persisted per device) and the
-// invite links that carry it.
+// The configured OneDrive destination folder (persisted per device), the
+// invite links that carry it, and the folder waiting for a sign-in.
 
-import { appBaseUrl } from './auth.js';
+import { appBaseUrl, login } from './auth.js';
 import { clearFolderCache } from './graph.js';
+import { tenantForLink } from './tenant.js';
 
 const KEY = 'scontrini.destination.v1';
-const PENDING_INVITE_KEY = 'scontrini.pendingInvite.v1';
+const PENDING_LINK_KEY = 'scontrini.pendingInvite.v1';
+const PENDING_OWN_KEY = 'scontrini.pendingOwnFolder.v1';
 const INVITE_PARAM = 'cartella';
 
 export const destination = {
@@ -63,12 +65,32 @@ export function captureInviteFromUrl() {
   const url = new URL(location.href);
   const link = url.searchParams.get(INVITE_PARAM);
   if (!link) return;
-  if (isValidShareUrl(link)) localStorage.setItem(PENDING_INVITE_KEY, link);
+  if (isValidShareUrl(link)) pendingLink.set(link);
   url.searchParams.delete(INVITE_PARAM);
   history.replaceState(null, '', url.pathname + url.search + url.hash);
 }
 
-export const pendingInvite = {
-  get: () => localStorage.getItem(PENDING_INVITE_KEY),
-  clear: () => localStorage.removeItem(PENDING_INVITE_KEY),
+/** Folder link to connect once signed in (it must survive the login redirect). */
+export const pendingLink = {
+  get: () => localStorage.getItem(PENDING_LINK_KEY),
+  set: (link) => localStorage.setItem(PENDING_LINK_KEY, link),
+  clear: () => localStorage.removeItem(PENDING_LINK_KEY),
 };
+
+/** Path in the user's own OneDrive to use once signed in. */
+export const pendingOwnFolder = {
+  get: () => localStorage.getItem(PENDING_OWN_KEY),
+  set: (path) => localStorage.setItem(PENDING_OWN_KEY, path),
+  clear: () => localStorage.removeItem(PENDING_OWN_KEY),
+};
+
+/**
+ * Signs in through the organization that owns the folder at `link` (the
+ * default sign-in if it is not a valid link); the folder connects on return.
+ */
+export async function signInForFolder(link) {
+  const tenantId = isValidShareUrl(link) ? await tenantForLink(link).catch(() => undefined) : undefined;
+  pendingOwnFolder.clear();
+  if (tenantId) pendingLink.set(link);
+  return login({ tenantId });
+}

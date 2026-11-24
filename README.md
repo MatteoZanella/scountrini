@@ -99,9 +99,9 @@ Both work with the app, and in both cases **each person signs in with their own 
 Then:
 
 1. With _Specific people_, add the Microsoft account of each leader: the exact address they sign in with (Outlook/Hotmail/Live or the one they use for OneDrive).
-2. Open the app, sign in, and at step 2 paste the link, or choose _"La cartella è nel mio OneDrive"_ if you will also take photos yourself.
+2. Open the app, paste the link and tap _Collega cartella_: the app opens the sign-in of the organization that owns the folder. Or choose _"La cartella è nel mio OneDrive"_ if you will also take photos yourself.
 3. _Impostazioni → Invita qualcuno_ creates an **invite link** and opens the phone's share sheet (WhatsApp, etc.). The invite contains the app URL and the folder link. Anyone already set up can forward invites the same way.
-4. Whoever opens the invite only has to sign in: the folder is linked automatically and saved on the device.
+4. Whoever opens the invite finds the link already filled in: one tap on _Collega cartella_, sign in, and the folder is linked and saved on the device.
 
 If you prefer not to use the app at all, an invite is just `<app URL>?cartella=<URL-encoded sharing link>`.
 
@@ -218,4 +218,4 @@ All dependencies come from npm and are pinned in `package-lock.json`: nothing th
 - **Uploads happen while the app is open** (on launch, when the connection returns, every 45 s). Browsers do not allow reliable background uploads with Microsoft tokens.
 - **WebP on Safari**: Safari cannot encode WebP from a canvas, so a WebAssembly encoder is loaded on demand. If that fails too, the app falls back to JPEG (same metadata).
 - **Resolution**: photos are capped at 4000 px on the long side and the final image at 16 Mpx / 16 000 px per side (iOS canvas and WebP limits). Receipt text stays sharp.
-- **Work/school accounts**: if the folder lives in a OneDrive for Business, external people must be invited as guests of the tenant, and `VITE_MS_AUTHORITY` must point to that tenant (e.g. `https://login.microsoftonline.com/contoso.onmicrosoft.com`). With `common`, guests sign in as their personal account and cannot reach the folder.
+- **Work/school accounts**: if the folder lives in a OneDrive for Business, external people must be invited as guests of the tenant. The app signs in through the organization in the folder link (`contoso-my.sharepoint.com` → `contoso.onmicrosoft.com`), so guests get an account that can reach the folder. If the organization blocks user consent, one of its admins must approve the app once.

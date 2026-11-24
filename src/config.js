@@ -10,8 +10,6 @@ export const CONFIG = {
   msal: {
     // Application (client) ID of the Microsoft Entra app registration (SPA)
     clientId: import.meta.env.VITE_MS_CLIENT_ID || 'INSERISCI-QUI-IL-CLIENT-ID',
-    // "common" = personal Microsoft accounts + work/school accounts
-    authority: import.meta.env.VITE_MS_AUTHORITY || 'https://login.microsoftonline.com/common',
   },
   // Files.ReadWrite.All is required to write into a folder shared by another user
   scopes: ['User.Read', 'Files.ReadWrite.All'],

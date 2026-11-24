@@ -1,6 +1,6 @@
 {
   "name": "scountrini",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "PWA statica per fotografare scontrini e archiviarli su OneDrive per anno associativo e branca.",
   "type": "module",

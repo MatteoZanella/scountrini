@@ -1,25 +1,35 @@
-// First-run setup: sign in → link the shared folder → name and branca.
+// First-run setup: folder link → sign in through the folder's organization →
+// name and branca. The link decides which Microsoft sign-in is needed.
 
 import { CONFIG } from '../../config.js';
 import { settings } from '../../core/settings.js';
 import { brancaOptions } from '../../core/branche.js';
 import { isIOS, isStandalone } from '../../core/device.js';
-import { getAccount, isAuthConfigured, login } from '../../cloud/auth.js';
+import { getAccount, isAuthConfigured, login, takeLoginError } from '../../cloud/auth.js';
 import { resolveOwnFolder, resolveShareLink } from '../../cloud/graph.js';
-import { destination, extractShareUrl, isValidShareUrl, pendingInvite } from '../../cloud/destination.js';
-import { describeError, isAccessDenied } from '../../cloud/errors.js';
+import { tenantForLink } from '../../cloud/tenant.js';
+import {
+  destination,
+  extractShareUrl,
+  isValidShareUrl,
+  pendingLink,
+  pendingOwnFolder,
+  signInForFolder,
+} from '../../cloud/destination.js';
+import { describeError, describeLoginError, isAccessDenied } from '../../cloud/errors.js';
 import { showAccessRequest } from '../access-request.js';
 import { withBusy } from '../busy.js';
 import { $, h, icon, show, toast, copyText, segmented } from '../dom.js';
 
 const els = {
-  stepLogin: $('#step-login'),
   stepFolder: $('#step-folder'),
   stepProfile: $('#step-profile'),
-  loginDone: $('#login-done'),
   folderDone: $('#folder-done'),
   configError: $('#setup-config-error'),
-  btnLogin: $('#btn-login'),
+  btnLinkShare: $('#btn-link-share'),
+  btnLinkOwn: $('#btn-link-own'),
+  accountRow: $('#setup-account'),
+  accountName: $('#setup-account-name'),
   share: $('#setup-share'),
   ownPath: $('#setup-own-path'),
   name: $('#setup-name'),
@@ -51,13 +61,13 @@ function doneLine(container, text) {
 }
 
 /** Link the user must paste into the installed app (iOS loses it on install). */
-const inviteLink = () => pendingInvite.get() || els.share.value.trim();
+const inviteLink = () => pendingLink.get() || els.share.value.trim();
 
 export function renderSetup() {
   const account = getAccount();
   const dest = destination.get();
   show(els.configError, !isAuthConfigured());
-  els.btnLogin.disabled = !isAuthConfigured();
+  els.btnLinkShare.disabled = els.btnLinkOwn.disabled = !isAuthConfigured();
 
   // iOS: a home-screen app has its own storage, separate from Safari. Signing
   // in here first would be wasted, so suggest installing before anything else.
@@ -66,13 +76,11 @@ export function renderSetup() {
   show(els.iosCopyRow, iosBrowser && isValidShareUrl(inviteLink()));
   show(els.iosPasteNote, iosBrowser && isValidShareUrl(inviteLink()));
 
-  setStep(els.stepLogin, account ? 'done' : 'active');
-  if (account) doneLine(els.loginDone, `Connesso come ${account.name} (${account.username})`);
-  show(els.btnSwitch, Boolean(account) && !dest);
-
-  setStep(els.stepFolder, !account ? 'locked' : dest ? 'done' : 'active');
+  setStep(els.stepFolder, account && dest ? 'done' : 'active');
   if (dest) doneLine(els.folderDone, `Cartella “${dest.name}”${dest.owner ? ` di ${dest.owner}` : ''}`);
-  if (!els.share.value) els.share.value = pendingInvite.get() || CONFIG.defaultShareUrl || '';
+  show(els.accountRow, Boolean(account));
+  if (account) els.accountName.textContent = `Connesso come ${account.name} (${account.username}).`;
+  if (!els.share.value) els.share.value = pendingLink.get() || dest?.shareUrl || CONFIG.defaultShareUrl || '';
   show(els.btnPaste, Boolean(navigator.clipboard?.readText));
   show(els.accountHint, Boolean(account) && !dest);
   if (account && !dest) {
@@ -96,11 +104,18 @@ export function renderSetup() {
   brancaControl.set(settings.get('branca'));
 }
 
+const failToLink = (e) =>
+  toast(`Impossibile collegare la cartella: ${describeError(e, { account: getAccount()?.username })}`, {
+    type: 'error',
+    timeout: 9000,
+  });
+
 async function linkDestination(resolver, label, { shareUrl } = {}) {
   try {
     const dest = await withBusy(label, resolver);
-    destination.set(dest);
-    pendingInvite.clear();
+    destination.set({ ...dest, tenantId: getAccount()?.tenantId });
+    pendingLink.clear();
+    pendingOwnFolder.clear();
     toast(`Cartella “${dest.name}” collegata`, { type: 'success' });
   } catch (e) {
     console.error(e);
@@ -108,18 +123,31 @@ async function linkDestination(resolver, label, { shareUrl } = {}) {
       renderSetup();
       return showAccessRequest({ shareUrl });
     }
-    toast(`Impossibile collegare la cartella: ${describeError(e, { account: getAccount()?.username })}`, {
-      type: 'error',
-      timeout: 9000,
-    });
+    failToLink(e);
   }
   renderSetup();
 }
 
+/**
+ * Links the shared folder at `url` with an account of the organization that
+ * owns it. If the signed-in account is from another one (or there is none),
+ * `interactive` signs in there first and the folder connects on return;
+ * otherwise the link just stays in the field.
+ */
+async function connectShare(url, { interactive }) {
+  let tenantId;
+  try {
+    tenantId = await withBusy('Cerco la cartella…', () => tenantForLink(url));
+  } catch (e) {
+    return failToLink(e);
+  }
+  if (getAccount()?.tenantId !== tenantId) return interactive ? signInForFolder(url) : renderSetup();
+  await linkDestination(() => resolveShareLink(url), 'Collego la cartella condivisa…', { shareUrl: url });
+}
+
 export function initSetup({ onDone }) {
   onComplete = onDone;
-  els.btnLogin.addEventListener('click', () => login());
-  els.btnSwitch.addEventListener('click', () => login());
+  els.btnSwitch.addEventListener('click', () => signInForFolder(extractShareUrl(els.share.value)));
   $('#btn-copy-invite').addEventListener('click', () =>
     copyText(inviteLink(), { title: 'Link della cartella', success: 'Link copiato: incollalo nell’app installata' }),
   );
@@ -144,12 +172,17 @@ export function initSetup({ onDone }) {
       els.share.focus();
       return;
     }
-    linkDestination(() => resolveShareLink(url), 'Collego la cartella condivisa…', { shareUrl: url });
+    connectShare(url, { interactive: true });
   });
 
-  $('#btn-link-own').addEventListener('click', () =>
-    linkDestination(() => resolveOwnFolder(els.ownPath.value), 'Preparo la cartella…'),
-  );
+  els.btnLinkOwn.addEventListener('click', () => {
+    const path = els.ownPath.value;
+    if (!getAccount()) {
+      pendingOwnFolder.set(path);
+      return login();
+    }
+    linkDestination(() => resolveOwnFolder(path), 'Preparo la cartella…');
+  });
 
   $('#btn-setup-done').addEventListener('click', () => {
     const name = els.name.value.trim();
@@ -167,13 +200,21 @@ export function initSetup({ onDone }) {
   });
 }
 
-/** After login, an invite link (if any) is resolved automatically. */
-export async function autoLinkPendingInvite() {
-  const link = pendingInvite.get();
-  if (!link || !getAccount()) return;
-  if (destination.get()?.shareUrl === link) {
-    pendingInvite.clear();
-    return;
+/**
+ * On launch (and back from sign-in): reports a failed sign-in, then connects
+ * the folder that was waiting for it, if the account can reach it.
+ */
+export async function resumeSetup() {
+  const loginError = takeLoginError();
+  if (loginError) {
+    pendingOwnFolder.clear();
+    toast(`Accesso non riuscito: ${describeLoginError(loginError)}`, { type: 'error', timeout: 12000 });
   }
-  await linkDestination(() => resolveShareLink(link), 'Collego la cartella dell’invito…', { shareUrl: link });
+  if (!getAccount()) return;
+  const own = pendingOwnFolder.get();
+  if (own != null) return linkDestination(() => resolveOwnFolder(own), 'Preparo la cartella…');
+  const link = pendingLink.get();
+  if (!link) return;
+  if (destination.get()?.shareUrl === link) return pendingLink.clear();
+  await connectShare(link, { interactive: false });
 }

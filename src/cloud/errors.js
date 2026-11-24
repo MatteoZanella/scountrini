@@ -30,6 +30,19 @@ export class NameTakenError extends Error {
   }
 }
 
+/** User-facing (Italian) reason a sign-in came back without an account. */
+export function describeLoginError(e) {
+  const text = `${e.errorCode || ''} ${e.errorMessage || e.message || ''}`;
+  if (/AADSTS(90094|90095|65001)|admin/i.test(text)) {
+    return 'serve l’approvazione di un amministratore dell’organizzazione che possiede la cartella';
+  }
+  if (/AADSTS(50020|50034)|does not exist in tenant/i.test(text)) {
+    return 'questo account non fa parte dell’organizzazione della cartella: usa l’indirizzo con cui te l’hanno condivisa';
+  }
+  if (/user_cancelled|access_denied|AADSTS65004/i.test(text)) return 'accesso annullato';
+  return (e.errorMessage || e.message || String(e)).split('\n')[0];
+}
+
 /** The signed-in account cannot see (404) or write (403) the folder. */
 export const isAccessDenied = (e) => e instanceof GraphError && (e.status === 403 || e.status === 404);
 
