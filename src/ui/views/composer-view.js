@@ -21,6 +21,7 @@ import { loadOpenCV } from '../../imaging/opencv.js';
 import { recognize } from '../../ocr/tesseract.js';
 import { extractDateTime, extractMerchant, extractTotal, extractVat } from '../../ocr/receipt-parser.js';
 import { openScanner } from '../scanner.js';
+import { attachMerchantAutocomplete } from '../merchant-autocomplete.js';
 import { canReadClipboardImages, initPhotoIntake, readClipboardImages } from '../photo-intake.js';
 import { canUseWebcam, captureFromWebcam, hasSystemCamera } from '../webcam.js';
 import { openViewer } from '../viewer.js';
@@ -42,7 +43,6 @@ const els = {
   dateHint: $('#date-hint'),
   merchant: $('#f-merchant'),
   merchantHint: $('#merchant-hint'),
-  merchantList: $('#merchant-list'),
   year: $('#f-year'),
   destPath: $('#dest-path'),
   amount: $('#f-amount'),
@@ -217,7 +217,6 @@ function renderForm() {
   els.notes.value = f.notes;
   brancaControl.set(f.branca);
   renderYearOptions();
-  els.merchantList.replaceChildren(...settings.get('merchants').map((m) => h('option', { value: m })));
   renderDerived();
 }
 
@@ -626,6 +625,7 @@ export function initComposer() {
     renderYearOptions();
     onFormChange();
   });
+  attachMerchantAutocomplete(els.merchant, () => settings.get('merchants'));
   els.merchant.addEventListener('input', () => {
     state.form.merchant = els.merchant.value;
     state.form.touched.merchant = true;

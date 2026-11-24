@@ -21,6 +21,8 @@
     "@jsquash/webp": "1.5.0",
     "@techstark/opencv-js": "4.10.0-release.1",
     "@tesseract.js-data/ita": "^1.0.0",
+    "autocompleter": "10.1.0",
+    "fuse.js": "7.5.0",
     "jscanify": "1.4.2",
     "tesseract.js": "6.0.1"
   },

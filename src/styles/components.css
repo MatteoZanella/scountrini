@@ -842,3 +842,38 @@ dialog input {
 .dialog .action-row:last-child {
   border-radius: 0;
 }
+
+/* Merchant suggestions (autocompleter positions the box under the input) */
+.suggest {
+  z-index: 40;
+  margin-top: 4px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  overscroll-behavior: contain;
+}
+
+.suggest > div {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 14px;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.suggest > div + div {
+  border-top: 1px solid var(--border);
+}
+
+.suggest strong {
+  color: var(--text);
+  font-weight: 650;
+}
+
+.suggest > div:hover,
+.suggest > div.selected {
+  background: var(--accent-soft);
+}
